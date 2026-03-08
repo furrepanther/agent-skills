@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "repo": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z",
+  "generated_at_utc": "2026-02-22T10:20:16Z",
+  "clamav_source_repo": "apt:clamav",
+  "clamav_source_ref": "system",
+  "scenario_pack_version": "clamav-sidecar-v1",
+  "clamav_compliance_summary": {
+    "scenarios_executed": 1,
+    "checks_passed": 1,
+    "checks_failed": 0,
+    "violations_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 0,
+      "LOW": 0
+    },
+    "evidence_paths": [
+      "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z"
+    ],
+    "mode": "clamscan",
+    "clamav_artifact": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/.agent/clamav-host-precheck.clamav.txt"
+  },
+  "clamav_runtime_required": true,
+  "definitive_malware_hit": false,
+  "gate_decision": "pass",
+  "findings": []
+}

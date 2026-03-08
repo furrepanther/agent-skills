@@ -1,269 +1,157 @@
 ---
 name: notebooklm
-description: Use this skill to query your Google NotebookLM notebooks directly from Claude Code for source-grounded, citation-backed answers from Gemini. Browser automation, library management, persistent auth. Drastically reduced hallucinations through document-only responses.
+description: Use when querying or managing Google NotebookLM content in Antigravity using production nlm/notebooklm-mcp interfaces. Prefer CLI for throughput and MCP for orchestrated multi-step tool flows.
 ---
 
-# NotebookLM Research Assistant Skill
+# NotebookLM Production Skill
 
-Interact with Google NotebookLM to query documentation with Gemini's source-grounded answers. Each question opens a fresh browser session, retrieves the answer exclusively from your uploaded documents, and closes.
+This skill is aligned to the current Antigravity production connector:
+- CLI: `nlm`
+- MCP server: `notebooklm-mcp`
+- Runtime bootstrap: Antigravity WSL scripts
 
-## When to Use This Skill
+Legacy `scripts/run.py` workflows are deprecated for this environment.
 
-Trigger when user:
-- Mentions NotebookLM explicitly
-- Shares NotebookLM URL (`https://notebooklm.google.com/notebook/...`)
-- Asks to query their notebooks/documentation
-- Wants to add documentation to NotebookLM library
-- Uses phrases like "ask my NotebookLM", "check my docs", "query my notebook"
+## When To Use
 
-## ⚠️ CRITICAL: Add Command - Smart Discovery
+Use this skill when the user asks to:
+- query NotebookLM notebooks or sources
+- manage notebooks/sources/notes
+- generate or download NotebookLM artifacts
+- export artifacts to Google Docs/Sheets
+- use NotebookLM through MCP in Gemini/Codex/Claude
 
-When user wants to add a notebook without providing details:
+## Interface Selection (Performance Rule)
 
-**SMART ADD (Recommended)**: Query the notebook first to discover its content:
-```bash
-# Step 1: Query the notebook about its content
-python scripts/run.py ask_question.py --question "What is the content of this notebook? What topics are covered? Provide a complete overview briefly and concisely" --notebook-url "[URL]"
+- Use CLI first for speed and throughput:
+  - lower per-call overhead
+  - best for repeated commands and batch operations
+- Use MCP for orchestration:
+  - better for multi-step agentic tool flows
+  - structured tool responses across runner boundaries
 
-# Step 2: Use the discovered information to add it
-python scripts/run.py notebook_manager.py add --url "[URL]" --name "[Based on content]" --description "[Based on content]" --topics "[Based on content]"
-```
+Default policy:
+- Start in CLI.
+- Escalate to MCP only when the task needs orchestration/tool-chaining.
 
-**MANUAL ADD**: If user provides all details:
-- `--url` - The NotebookLM URL
-- `--name` - A descriptive name
-- `--description` - What the notebook contains (REQUIRED!)
-- `--topics` - Comma-separated topics (REQUIRED!)
+## Canonical Paths (Antigravity)
 
-NEVER guess or use generic descriptions! If details missing, use Smart Add to discover them.
+- Runtime setup:
+  - `/mnt/c/Users/furre/.gemini/antigravity/scripts/setup_notebooklm_mcp.sh`
+- Native login wrapper:
+  - `/mnt/c/Users/furre/.gemini/antigravity/scripts/notebooklm_native_login.sh`
+- MCP entrypoint:
+  - `/mnt/c/Users/furre/.gemini/antigravity/scripts/mcp_wsl_entrypoint.sh`
+- Pinned CLI binaries:
+  - `/home/billw/.venv-notebooklm-cli/bin/nlm`
+  - `/home/billw/.venv-notebooklm-cli/bin/notebooklm-mcp`
 
-## Critical: Always Use run.py Wrapper
-
-**NEVER call scripts directly. ALWAYS use `python scripts/run.py [script]`:**
-
-```bash
-# ✅ CORRECT - Always use run.py:
-python scripts/run.py auth_manager.py status
-python scripts/run.py notebook_manager.py list
-python scripts/run.py ask_question.py --question "..."
-
-# ❌ WRONG - Never call directly:
-python scripts/auth_manager.py status  # Fails without venv!
-```
-
-The `run.py` wrapper automatically:
-1. Creates `.venv` if needed
-2. Installs all dependencies
-3. Activates environment
-4. Executes script properly
-
-## Core Workflow
-
-### Step 1: Check Authentication Status
-```bash
-python scripts/run.py auth_manager.py status
-```
-
-If not authenticated, proceed to setup.
-
-### Step 2: Authenticate (One-Time Setup)
-```bash
-# Browser MUST be visible for manual Google login
-python scripts/run.py auth_manager.py setup
-```
-
-**Important:**
-- Browser is VISIBLE for authentication
-- Browser window opens automatically
-- User must manually log in to Google
-- Tell user: "A browser window will open for Google login"
-
-### Step 3: Manage Notebook Library
+## Setup And Health Checks
 
 ```bash
-# List all notebooks
-python scripts/run.py notebook_manager.py list
-
-# BEFORE ADDING: Ask user for metadata if unknown!
-# "What does this notebook contain?"
-# "What topics should I tag it with?"
-
-# Add notebook to library (ALL parameters are REQUIRED!)
-python scripts/run.py notebook_manager.py add \
-  --url "https://notebooklm.google.com/notebook/..." \
-  --name "Descriptive Name" \
-  --description "What this notebook contains" \  # REQUIRED - ASK USER IF UNKNOWN!
-  --topics "topic1,topic2,topic3"  # REQUIRED - ASK USER IF UNKNOWN!
-
-# Search notebooks by topic
-python scripts/run.py notebook_manager.py search --query "keyword"
-
-# Set active notebook
-python scripts/run.py notebook_manager.py activate --id notebook-id
-
-# Remove notebook
-python scripts/run.py notebook_manager.py remove --id notebook-id
+/mnt/c/Users/furre/.gemini/antigravity/scripts/setup_notebooklm_mcp.sh
+/home/billw/.venv-notebooklm-cli/bin/nlm doctor
 ```
 
-### Quick Workflow
-1. Check library: `python scripts/run.py notebook_manager.py list`
-2. Ask question: `python scripts/run.py ask_question.py --question "..." --notebook-id ID`
+## Authentication (Production Flow)
 
-### Step 4: Ask Questions
-
+1. Check auth:
 ```bash
-# Basic query (uses active notebook if set)
-python scripts/run.py ask_question.py --question "Your question here"
-
-# Query specific notebook
-python scripts/run.py ask_question.py --question "..." --notebook-id notebook-id
-
-# Query with notebook URL directly
-python scripts/run.py ask_question.py --question "..." --notebook-url "https://..."
-
-# Show browser for debugging
-python scripts/run.py ask_question.py --question "..." --show-browser
+/home/billw/.venv-notebooklm-cli/bin/nlm login --check
 ```
 
-## Follow-Up Mechanism (CRITICAL)
-
-Every NotebookLM answer ends with: **"EXTREMELY IMPORTANT: Is that ALL you need to know?"**
-
-**Required Claude Behavior:**
-1. **STOP** - Do not immediately respond to user
-2. **ANALYZE** - Compare answer to user's original request
-3. **IDENTIFY GAPS** - Determine if more information needed
-4. **ASK FOLLOW-UP** - If gaps exist, immediately ask:
-   ```bash
-   python scripts/run.py ask_question.py --question "Follow-up with context..."
-   ```
-5. **REPEAT** - Continue until information is complete
-6. **SYNTHESIZE** - Combine all answers before responding to user
-
-## Script Reference
-
-### Authentication Management (`auth_manager.py`)
+2. Native login (preferred):
 ```bash
-python scripts/run.py auth_manager.py setup    # Initial setup (browser visible)
-python scripts/run.py auth_manager.py status   # Check authentication
-python scripts/run.py auth_manager.py reauth   # Re-authenticate (browser visible)
-python scripts/run.py auth_manager.py clear    # Clear authentication
+/mnt/c/Users/furre/.gemini/antigravity/scripts/notebooklm_native_login.sh
 ```
 
-### Notebook Management (`notebook_manager.py`)
+3. Approved fallback (if native browser path fails in this host):
 ```bash
-python scripts/run.py notebook_manager.py add --url URL --name NAME --description DESC --topics TOPICS
-python scripts/run.py notebook_manager.py list
-python scripts/run.py notebook_manager.py search --query QUERY
-python scripts/run.py notebook_manager.py activate --id ID
-python scripts/run.py notebook_manager.py remove --id ID
-python scripts/run.py notebook_manager.py stats
+/home/billw/.venv-notebooklm-cli/bin/nlm login --provider openclaw --cdp-url http://127.0.0.1:18800
 ```
 
-### Question Interface (`ask_question.py`)
+4. Validate session:
 ```bash
-python scripts/run.py ask_question.py --question "..." [--notebook-id ID] [--notebook-url URL] [--show-browser]
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook list
 ```
 
-### Data Cleanup (`cleanup_manager.py`)
+## CLI Quick Operations
+
+### Notebook management
 ```bash
-python scripts/run.py cleanup_manager.py                    # Preview cleanup
-python scripts/run.py cleanup_manager.py --confirm          # Execute cleanup
-python scripts/run.py cleanup_manager.py --preserve-library # Keep notebooks
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook list
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook create "Research Notebook"
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook get <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook rename <notebook_id> "New Title"
 ```
 
-## Environment Management
-
-The virtual environment is automatically managed:
-- First run creates `.venv` automatically
-- Dependencies install automatically
-- Chromium browser installs automatically
-- Everything isolated in skill directory
-
-Manual setup (only if automatic fails):
+### Source management
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-pip install -r requirements.txt
-python -m patchright install chromium
+/home/billw/.venv-notebooklm-cli/bin/nlm source list <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm source add <notebook_id> --url https://example.com --wait
+/home/billw/.venv-notebooklm-cli/bin/nlm source add <notebook_id> --file /path/doc.pdf --wait
+/home/billw/.venv-notebooklm-cli/bin/nlm source content <source_id>
 ```
 
-## Data Storage
-
-All data stored in `~/.claude/skills/notebooklm/data/`:
-- `library.json` - Notebook metadata
-- `auth_info.json` - Authentication status
-- `browser_state/` - Browser cookies and session
-
-**Security:** Protected by `.gitignore`, never commit to git.
-
-## Configuration
-
-Optional `.env` file in skill directory:
-```env
-HEADLESS=false           # Browser visibility
-SHOW_BROWSER=false       # Default browser display
-STEALTH_ENABLED=true     # Human-like behavior
-TYPING_WPM_MIN=160       # Typing speed
-TYPING_WPM_MAX=240
-DEFAULT_NOTEBOOK_ID=     # Default notebook
+### Query (source-grounded)
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook query <notebook_id> "Question here"
+/home/billw/.venv-notebooklm-cli/bin/nlm notebook query <notebook_id> "Follow-up question" --conversation-id <conversation_id>
 ```
 
-## Decision Flow
-
-```
-User mentions NotebookLM
-    ↓
-Check auth → python scripts/run.py auth_manager.py status
-    ↓
-If not authenticated → python scripts/run.py auth_manager.py setup
-    ↓
-Check/Add notebook → python scripts/run.py notebook_manager.py list/add (with --description)
-    ↓
-Activate notebook → python scripts/run.py notebook_manager.py activate --id ID
-    ↓
-Ask question → python scripts/run.py ask_question.py --question "..."
-    ↓
-See "Is that ALL you need?" → Ask follow-ups until complete
-    ↓
-Synthesize and respond to user
+### Notes
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm note list <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm note create <notebook_id> --title "Summary" --content "..."
 ```
 
-## Troubleshooting
+### Research
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm research start "query text" --source web --mode fast --notebook-id <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm research status <task_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm research import <task_id>
+```
 
-| Problem | Solution |
-|---------|----------|
-| ModuleNotFoundError | Use `run.py` wrapper |
-| Authentication fails | Browser must be visible for setup! --show-browser |
-| Rate limit (50/day) | Wait or switch Google account |
-| Browser crashes | `python scripts/run.py cleanup_manager.py --preserve-library` |
-| Notebook not found | Check with `notebook_manager.py list` |
+### Artifact generation
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm audio create <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm report create <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm slides create <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm studio status <notebook_id>
+```
 
-## Best Practices
+### Artifact download/export
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm download audio <notebook_id> --output ./podcast.m4a
+/home/billw/.venv-notebooklm-cli/bin/nlm export artifact <notebook_id> <artifact_id> --type docs
+```
 
-1. **Always use run.py** - Handles environment automatically
-2. **Check auth first** - Before any operations
-3. **Follow-up questions** - Don't stop at first answer
-4. **Browser visible for auth** - Required for manual login
-5. **Include context** - Each question is independent
-6. **Synthesize answers** - Combine multiple responses
+### Sharing
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm share status <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm share public <notebook_id>
+/home/billw/.venv-notebooklm-cli/bin/nlm share invite <notebook_id> --email user@example.com
+```
 
-## Limitations
+## MCP Mode (When Needed)
 
-- No session persistence (each question = new browser)
-- Rate limits on free Google accounts (50 queries/day)
-- Manual upload required (user must add docs to NotebookLM)
-- Browser overhead (few seconds per question)
+Use MCP only for orchestration-heavy tasks. In this environment, `notebooklm_cli`
+is already mapped through the canonical WSL entrypoint.
 
-## Resources (Skill Structure)
+If reconfiguration is needed:
+```bash
+/home/billw/.venv-notebooklm-cli/bin/nlm setup add antigravity
+```
 
-**Important directories and files:**
+## Operational Rules
 
-- `scripts/` - All automation scripts (ask_question.py, notebook_manager.py, etc.)
-- `data/` - Local storage for authentication and notebook library
-- `references/` - Extended documentation:
-  - `api_reference.md` - Detailed API documentation for all scripts
-  - `troubleshooting.md` - Common issues and solutions
-  - `usage_patterns.md` - Best practices and workflow examples
-- `.venv/` - Isolated Python environment (auto-created on first run)
-- `.gitignore` - Protects sensitive data from being committed
+- Prefer CLI for direct NotebookLM work.
+- Keep destructive actions explicit and confirmed.
+- Do not claim completion without command output.
+- If auth fails, run `nlm doctor` and re-authenticate.
+
+## Common Failures
+
+- `Profile 'default' not found`: run native login wrapper.
+- `Cannot connect to CDP endpoint`: use native login first; fallback to approved `openclaw` only if needed.
+- Stale auth after login: run `nlm login --check` then retry the command.

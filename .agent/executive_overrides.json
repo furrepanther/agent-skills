@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "repo": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z",
+  "overrides": [
+    {
+      "override_id": "exec-override-agent-skills-giskard-artifacts-builder-rmrf-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "giskard",
+      "rule_id": "unsafe_shell_delete",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/artifacts-builder/scripts/bundle-artifact.sh",
+      "line": 36,
+      "approved_by": "furre",
+      "reason": "Local build cleanup of generated artifacts (dist and bundle.html) in skill helper script; not deleting user-provided paths.",
+      "evidence": "rm -rf targets are fixed literals \"dist\" and \"bundle.html\" immediately before rebuild in artifacts-builder script."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-aws-cdk-pathliteral-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/path-traversal-risk",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/aws-cdk-development/scripts/validate-stack.sh",
+      "line": 28,
+      "approved_by": "furre",
+      "reason": "Static project-root resolution using ../../.. from script directory; no user input involved.",
+      "evidence": "PROJECT_ROOT computed from ${SCRIPT_DIR}/../../.. in shell script bootstrap."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-docx-pptx-normalize-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/path-traversal-risk",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/document-skills/docx/ooxml/scripts/validation/pptx.py",
+      "line": 272,
+      "approved_by": "furre",
+      "reason": "Normalization of OOXML relationship target string for validation logic; not filesystem traversal execution.",
+      "evidence": "Code strips \"../\" from relationship Target before indexing references."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-pptx-pptx-normalize-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/path-traversal-risk",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/document-skills/pptx/ooxml/scripts/validation/pptx.py",
+      "line": 272,
+      "approved_by": "furre",
+      "reason": "Normalization of OOXML relationship target string for validation logic; not filesystem traversal execution.",
+      "evidence": "Code strips \"../\" from relationship Target before indexing references."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-playwright-selector-password-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/hardcoded-credentials",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/playwright-skill/lib/helpers.js",
+      "line": 208,
+      "approved_by": "furre",
+      "reason": "False positive on CSS selector string containing the word password; no credential value is embedded.",
+      "evidence": "String is selector mapping: input[name=\"password\"], #password."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-playwright-temp-require-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/path-traversal-risk",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/playwright-skill/run.js",
+      "line": 208,
+      "approved_by": "furre",
+      "reason": "False positive line association near temp-file require; flagged line is console log, and temp file path is created via path.join(__dirname, fixed prefix + timestamp).",
+      "evidence": "No user-controlled ../ path on flagged line; temp file path anchored to __dirname."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-webapp-shelltrue-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/command-injection-risk",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/webapp-testing/scripts/with_server.py",
+      "line": 69,
+      "approved_by": "furre",
+      "reason": "Known local dev helper pattern to support chained shell commands (cd && ...); retained for reviewable utility script use only. Functional duplicate review may keep existing skill instead of importing this implementation.",
+      "evidence": "Comment explicitly documents shell=True usage to support commands with cd and &&; command source is skill-provided server config, not network input."
+    },
+    {
+      "override_id": "exec-override-agent-skills-codeql-writing-skills-example-path-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "codeql",
+      "rule_id": "codeql/path-traversal-risk",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/writing-skills/render-graphs.js",
+      "line": 96,
+      "approved_by": "furre",
+      "reason": "Example CLI usage string in help output only; not path processing from attacker input.",
+      "evidence": "Flagged line prints sample path ../subagent-driven-development to stderr as documentation."
+    },
+    {
+      "override_id": "exec-override-agent-skills-semgrep-playwright-dollareval-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "semgrep",
+      "rule_id": "semgrep/js/eval",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/playwright-skill/lib/helpers.js",
+      "line": 174,
+      "approved_by": "furre",
+      "reason": "False positive on Playwright page.$$eval API (DOM extraction helper), not JavaScript eval().",
+      "evidence": "Call is page.$$eval(selector, elements => ...), standard Playwright API."
+    },
+    {
+      "override_id": "exec-override-agent-skills-semgrep-webapp-shelltrue-001",
+      "status": "active",
+      "scope": "finding",
+      "tool": "semgrep",
+      "rule_id": "semgrep/python/shell-true",
+      "file": "/mnt/f/.repo-quarantine/agent-skills__20260222T101417Z/skills/webapp-testing/scripts/with_server.py",
+      "line": 69,
+      "approved_by": "furre",
+      "reason": "Known local dev helper pattern mirroring CodeQL finding; accepted with receipt for gated review process. Import decision handled separately via functional-dup triage.",
+      "evidence": "shell=True used in local server bootstrap helper to support composite commands; same reviewed context as codeql/command-injection-risk."
+    }
+  ]
+}
