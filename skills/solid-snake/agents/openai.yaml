@@ -1,0 +1,6 @@
+interface:
+  display_name: "Solid Snake"
+  short_description: "Adversarial deep debugger for Python/C, concurrency, hidden paths, and durable memory"
+  default_prompt: "Use $solid-snake to audit this code for hidden-path failures, bypasses, stealth regressions, concurrency bugs, Python/C logic flaws, and durable Memory Fabric lessons."
+policy:
+  allow_implicit_invocation: true

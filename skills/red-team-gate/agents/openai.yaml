@@ -1,0 +1,7 @@
+interface:
+  display_name: "Red-Team Gate"
+  short_description: "Adversarial review gate orchestration"
+  default_prompt: "Use $red-team-gate to run a local-only adversarial review gate and disposition every finding."
+
+# Host skill selection provides automatic discovery; it grants no tools or
+# permissions. Scope is SKILL.md:L10-L17 and local routing is SKILL.md:L21-L37.
