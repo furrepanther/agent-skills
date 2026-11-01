@@ -176,9 +176,14 @@ peer review lane only when cross-system impact requires it.
    Preserve the typed transport attestation in compact Grumpy handoffs:
    `transport=pointer_backed_complete_bytes`, `complete_bytes_stored=true`,
    and `inline_bytes_in_lane=false`, alongside the verified exact pointer and
-   atomic index. When this attestation is present and the acceptance criteria
-   permit pointer-backed transport, the reviewer must not demand inline raw
-   bytes; paths and hashes alone remain insufficient without the attestation.
+   atomic index. When pointer-backed transport is permitted, inline raw bytes
+   are not required if the reviewer receives the necessary verified content
+   through a supported retrieval or hydration path. Producer-side storage,
+   hashes, and transport attestation alone do not prove reviewer access. If the
+   content needed for the decision is unavailable or reviewer receipt cannot
+   be established, return `insufficient_evidence` and block promotion. Never
+   accept a no-block result that marks required evidence inaccessible or a
+   requirement missing evidence.
    Preserve the canonical `PROVENANCE.repo_or_scope` during compaction so the
    receiving checker does not substitute a temporary input filename and make
    the parent size estimate disagree with the child. A below-floor complete

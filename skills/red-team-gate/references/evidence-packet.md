@@ -49,9 +49,12 @@ Use a two-layer exchange:
    digests, required paths/decisions/findings, and the explicit promotion
    state. The index is the budgeted proof of identity and status, not a second
    copy of the full evidence.
-2. The complete packet remains in one temporary record. If a reviewer needs
-   substance, retrieve the exact record id first, verify its digest and
-   generation, then select only the named field or bounded byte/line slice.
+2. The complete packet remains in one temporary record. For the evidence
+   needed to decide, retrieve the exact record id, verify its digest and
+   generation, then deliver the named field or bounded byte/line slice to the
+   reviewer. Prove reviewer receipt; producer-side verification alone is not
+   reviewer access. If required evidence cannot be delivered or receipt cannot
+   be established, return `insufficient_evidence` and block promotion.
    Pointer lookup, metadata lookup, and content retrieval are separate steps;
    a pointer never authorizes a broad database scan.
 3. Within one gate, deduplicate repeated pointer requests by exact id and
