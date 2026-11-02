@@ -14,6 +14,26 @@ The canonical shared source for this skill is
 `/mnt/linuxdata/Github/agent-skills/skills/agent-mail/` on Datacube and
 `/linuxdata/Github/agent-skills/skills/agent-mail/` on Primus.
 
+## Command identity
+
+Use this skill's `scripts/agent-mail` helper for every local Agent Mail CLI
+operation. It resolves the active host's managed Python and Agent Mail source
+root without depending on the caller's `PATH`; it never starts, stops, or
+reconfigures the service.
+
+Do not invoke a bare `mcp-agent-mail` or construct `python -m
+mcp_agent_mail.cli` commands by hand. Before a CLI operation, run the shared
+helper's read-only preflight:
+
+```bash
+/home/antigravity/.codex/skills/agent-mail/scripts/verify-agent-mail.sh
+```
+
+The installed skill path may differ on Primus, but its corresponding shared
+skill helper must be used there. A missing managed Python or source root is a
+path-deployment defect; report it and repair the shared deployment rather than
+falling back to an arbitrary interpreter or checkout.
+
 ## Safe intake
 
 At turn start and before a consequential action, check the authenticated Agent

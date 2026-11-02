@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Canonical Agent Mail CLI launcher. This is a client selector, not a service
+# manager: it never starts, stops, or reconfigures Agent Mail.
+set -euo pipefail
+
+usage() {
+  printf '%s\n' 'usage: agent-mail [--verify] [mcp-agent-mail CLI arguments...]' >&2
+}
+
+if [[ "${1:-}" == "--verify" ]]; then
+  if [[ "$#" -ne 1 ]]; then
+    usage
+    exit 64
+  fi
+  verify_only=1
+else
+  verify_only=0
+fi
+
+host_name="$(/usr/bin/hostname -s 2>/dev/null | /usr/bin/tr '[:upper:]' '[:lower:]')"
+case "$host_name" in
+  datacube*)
+    python_bin="/home/Antigravity/.venv-antigravity/bin/python"
+    source_root="/home/Antigravity/mcp_agent_mail/src"
+    ;;
+  primus*)
+    python_bin="${ANTIGRAVITY_AGENT_MAIL_PYTHON_BIN:-}"
+    source_root="${MCP_AGENT_MAIL_SRC_ROOT:-}"
+    ;;
+  *)
+    printf 'Agent Mail launcher host is unsupported: %s\n' "${host_name:-unknown}" >&2
+    exit 78
+    ;;
+esac
+
+if [[ -z "$python_bin" || ! -x "$python_bin" ]]; then
+  printf '%s\n' 'Agent Mail managed Python is unavailable; repair the host launcher configuration.' >&2
+  exit 78
+fi
+if [[ -z "$source_root" || ! -f "$source_root/mcp_agent_mail/cli.py" ]]; then
+  printf '%s\n' 'Agent Mail source is unavailable; repair the host launcher configuration.' >&2
+  exit 78
+fi
+
+if [[ "$verify_only" == "1" ]]; then
+  printf 'agent_mail_python=%s\n' "$python_bin"
+  printf 'agent_mail_source=%s\n' "$source_root"
+  exit 0
+fi
+
+case ":${PYTHONPATH:-}:" in
+  *":$source_root:"*) ;;
+  *) export PYTHONPATH="$source_root${PYTHONPATH:+:$PYTHONPATH}" ;;
+esac
+
+exec "$python_bin" -P -m mcp_agent_mail.cli "$@"
