@@ -34,6 +34,18 @@ skill helper must be used there. A missing managed Python or source root is a
 path-deployment defect; report it and repair the shared deployment rather than
 falling back to an arbitrary interpreter or checkout.
 
+For direct interactive commands, deploy the paired Agent Mail and SLIM mailbox
+launchers from the shared source after a host setup or skill update:
+
+```bash
+/mnt/linuxdata/Github/agent-skills/scripts/install-mailbox-cli-launchers.sh
+/mnt/linuxdata/Github/agent-skills/scripts/install-mailbox-cli-launchers.sh --verify
+```
+
+On Primus, use the corresponding `/linuxdata/Github/agent-skills/` path. The
+installer writes only `$HOME/.local/bin`, refuses to replace a different file,
+and never changes a service or transport configuration.
+
 For authenticated routine intake, use the managed-identity commands rather
 than passing a registration token yourself:
 

@@ -35,6 +35,18 @@ The first path is a symlink into the shared `agent-skills` personal fork.  On
 Primus, use the corresponding installed skill path on that host; the helper
 selects its local launcher there.
 
+For a direct `slim-mailbox` command, deploy the paired mailbox launchers from
+the shared source and verify them after setup or a skill update:
+
+```bash
+/mnt/linuxdata/Github/agent-skills/scripts/install-mailbox-cli-launchers.sh
+/mnt/linuxdata/Github/agent-skills/scripts/install-mailbox-cli-launchers.sh --verify
+```
+
+On Primus, substitute `/linuxdata/Github/agent-skills/`. The installer affects
+only `$HOME/.local/bin`, refuses conflicting targets, and does not manage the
+SLIM daemon or any transport.
+
 ## Preflight and path discipline
 
 Before an operation directed at Primus, run:
