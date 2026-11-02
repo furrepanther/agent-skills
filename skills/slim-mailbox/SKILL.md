@@ -45,7 +45,8 @@ the shared source and verify them after setup or a skill update:
 
 On Primus, substitute `/linuxdata/Github/agent-skills/`. The installer affects
 only `$HOME/.local/bin`, refuses conflicting targets, and does not manage the
-SLIM daemon or any transport.
+SLIM daemon or any transport. Run the installer before, not alongside, its
+verification or direct-command probes.
 
 ## Preflight and path discipline
 

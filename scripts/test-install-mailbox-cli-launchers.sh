@@ -24,6 +24,12 @@ trap cleanup EXIT
 "$installer" --target-dir "$test_root/bin" --dry-run
 [ ! -e "$test_root/bin" ]
 
+set +e
+"$installer" --target-dir "$test_root/bin" --verify >/dev/null 2>&1
+preinstall_verify_status=$?
+set -e
+[ "$preinstall_verify_status" -eq 78 ]
+
 "$installer" --target-dir "$test_root/bin"
 "$installer" --target-dir "$test_root/bin" --verify
 

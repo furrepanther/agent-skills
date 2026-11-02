@@ -44,7 +44,9 @@ launchers from the shared source after a host setup or skill update:
 
 On Primus, use the corresponding `/linuxdata/Github/agent-skills/` path. The
 installer writes only `$HOME/.local/bin`, refuses to replace a different file,
-and never changes a service or transport configuration.
+and never changes a service or transport configuration. Run installation and
+all later verification or direct-command probes serially; a concurrent probe
+can legitimately observe the pre-install state.
 
 For authenticated routine intake, use the managed-identity commands rather
 than passing a registration token yourself:
