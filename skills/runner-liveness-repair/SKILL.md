@@ -10,6 +10,12 @@ launcher, watchdog, startup coordinator, or automatic repair path on Datacube
 or Primus.  It does not apply to an ordinary bounded HTTP/database request
 unless that request timeout is used to terminate or replace a process.
 
+This is the shared policy for every automatic runner: Memory Fabric, Mem0,
+SimpleMem, MemWiki ingestion/indexing, document jobs, model services, and
+future runners on either host.  A runner that has not been reviewed under this
+policy may be inventoried, but it is not approved for a new automatic startup
+chain.
+
 ## Required distinction
 
 Classify every deadline before changing behavior:
