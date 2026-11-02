@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import socket
 import sys
@@ -180,6 +181,24 @@ def _tool_result(payload: dict[str, Any], *, secrets: tuple[str, ...] = ()) -> A
     return result
 
 
+def _resource_result(payload: dict[str, Any], *, secrets: tuple[str, ...] = ()) -> Any:
+    result = payload.get("result")
+    if not isinstance(result, dict):
+        raise AgentMailAuthError("Agent Mail returned an invalid resource response")
+    if result.get("isError"):
+        detail = _tool_error_detail(result, secrets)
+        suffix = f": {detail}" if detail else ""
+        raise AgentMailAuthError(f"Agent Mail rejected the resource request{suffix}")
+    for item in result.get("contents") or []:
+        if not isinstance(item, dict) or not isinstance(item.get("text"), str):
+            continue
+        try:
+            return json.loads(item["text"])
+        except json.JSONDecodeError:
+            return item["text"]
+    raise AgentMailAuthError("Agent Mail returned an empty resource response")
+
+
 def _call_tool(identity: dict[str, str], tool_name: str, arguments: dict[str, Any]) -> Any:
     endpoint = _require_loopback_api(identity["AGENT_MAIL_URL"])
     payload = {
@@ -208,6 +227,33 @@ def _call_tool(identity: dict[str, str], tool_name: str, arguments: dict[str, An
     except json.JSONDecodeError as exc:
         raise AgentMailAuthError("Agent Mail returned an invalid response") from exc
     return _tool_result(response_payload, secrets=(identity.get("_token", ""),))
+
+
+def _call_resource(identity: dict[str, str], uri: str) -> Any:
+    endpoint = _require_loopback_api(identity["AGENT_MAIL_URL"])
+    payload = {
+        "jsonrpc": "2.0",
+        "id": f"agent-mail-managed-cli-{uuid.uuid4().hex}",
+        "method": "resources/read",
+        "params": {"uri": uri},
+    }
+    encoded = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = request.Request(
+        endpoint,
+        data=encoded,
+        headers={"Accept": "application/json", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=5) as response:
+            raw = response.read().decode("utf-8")
+    except (error.HTTPError, error.URLError, TimeoutError, OSError) as exc:
+        raise AgentMailAuthError("managed Agent Mail resource request failed") from exc
+    try:
+        response_payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise AgentMailAuthError("Agent Mail returned an invalid resource response") from exc
+    return _resource_result(response_payload, secrets=(identity.get("_token", ""),))
 
 
 def _positive_int(value: str) -> int:
@@ -254,6 +300,11 @@ def _topic(value: str) -> str:
     return topic
 
 
+def _project_slug(project_key: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", project_key.strip().lower()).strip("-")
+    return slug or "project"
+
+
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Managed-identity Agent Mail operations")
     subparsers = parser.add_subparsers(dest="operation", required=True)
@@ -264,6 +315,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     inbox.add_argument("--include-bodies", action="store_true")
     inbox.add_argument("--max-body-chars", type=_positive_int, default=2400)
     inbox.add_argument("--since", dest="since_ts", metavar="ISO_8601")
+
+    subparsers.add_parser("agents", help="List agents registered in the active project")
 
     reply = subparsers.add_parser("reply", help="Reply in an existing Agent Mail thread")
     reply.add_argument("--message-id", type=_positive_int, required=True)
@@ -306,6 +359,11 @@ def main(argv: list[str] | None = None) -> int:
             )
             if args.include_bodies:
                 result = _truncate_bodies(result, min(args.max_body_chars, 10000))
+        elif args.operation == "agents":
+            result = _call_resource(
+                identity,
+                f"resource://agents/{_project_slug(identity['AGENT_MAIL_PROJECT'])}",
+            )
         elif args.operation == "reply":
             result = _call_tool(
                 identity,

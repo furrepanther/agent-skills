@@ -59,6 +59,10 @@ class AgentMailAuthTests(unittest.TestCase):
         args = MODULE._parse_args(["inbox", "--since", "2026-11-02T16:00:00+00:00"])
         self.assertEqual(args.since_ts, "2026-11-02T16:00:00+00:00")
 
+    def test_agents_uses_the_active_project_slug(self) -> None:
+        self.assertEqual(MODULE._parse_args(["agents"]).operation, "agents")
+        self.assertEqual(MODULE._project_slug("/home/Antigravity"), "home-antigravity")
+
     def test_send_parses_only_explicit_validated_recipients(self) -> None:
         args = MODULE._parse_args(
             [
@@ -139,6 +143,32 @@ class AgentMailAuthTests(unittest.TestCase):
         second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
         self.assertNotEqual(first_payload["id"], second_payload["id"])
         self.assertTrue(first_payload["id"].startswith("agent-mail-managed-cli-"))
+
+    @mock.patch.object(MODULE.request, "urlopen")
+    def test_agents_resource_request_uses_a_local_resource_uri(self, mocked_urlopen: mock.Mock) -> None:
+        mocked_urlopen.return_value = FakeResponse(
+            {
+                "jsonrpc": "2.0",
+                "result": {
+                    "contents": [
+                        {
+                            "uri": "resource://agents/home-antigravity",
+                            "mimeType": "application/json",
+                            "text": '{"agents":[{"name":"PrimusRunner"}]}',
+                        }
+                    ]
+                },
+            }
+        )
+        identity = {
+            "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+            "_token": "secret-token",
+        }
+        result = MODULE._call_resource(identity, "resource://agents/home-antigravity")
+        request_payload = json.loads(mocked_urlopen.call_args.args[0].data.decode("utf-8"))
+        self.assertEqual(request_payload["method"], "resources/read")
+        self.assertEqual(request_payload["params"]["uri"], "resource://agents/home-antigravity")
+        self.assertEqual(result["agents"], [{"name": "PrimusRunner"}])
 
     @mock.patch.object(MODULE, "_call_tool")
     @mock.patch.object(MODULE, "_load_identity")
