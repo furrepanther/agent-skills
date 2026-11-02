@@ -139,12 +139,31 @@ def _truncate_bodies(value: Any, max_chars: int) -> Any:
     return value
 
 
-def _tool_result(payload: dict[str, Any]) -> Any:
+def _tool_error_detail(result: dict[str, Any], secrets: tuple[str, ...]) -> str:
+    for item in result.get("content") or []:
+        if not isinstance(item, dict) or item.get("type") != "text":
+            continue
+        detail = _redact(str(item.get("text") or "").strip(), secrets)
+        if detail:
+            return " ".join(detail.split())[:500]
+    structured = result.get("structuredContent")
+    if isinstance(structured, dict):
+        code = str(structured.get("code") or "").strip()
+        message = str(structured.get("message") or "").strip()
+        detail = _redact(" ".join(value for value in (code, message) if value), secrets)
+        if detail:
+            return " ".join(detail.split())[:500]
+    return ""
+
+
+def _tool_result(payload: dict[str, Any], *, secrets: tuple[str, ...] = ()) -> Any:
     result = payload.get("result")
     if not isinstance(result, dict):
         raise AgentMailAuthError("Agent Mail returned an invalid response")
     if result.get("isError"):
-        raise AgentMailAuthError("Agent Mail rejected the requested operation")
+        detail = _tool_error_detail(result, secrets)
+        suffix = f": {detail}" if detail else ""
+        raise AgentMailAuthError(f"Agent Mail rejected the requested operation{suffix}")
     structured = result.get("structuredContent")
     if structured is not None:
         return structured
@@ -188,7 +207,7 @@ def _call_tool(identity: dict[str, str], tool_name: str, arguments: dict[str, An
         response_payload = json.loads(raw)
     except json.JSONDecodeError as exc:
         raise AgentMailAuthError("Agent Mail returned an invalid response") from exc
-    return _tool_result(response_payload)
+    return _tool_result(response_payload, secrets=(identity.get("_token", ""),))
 
 
 def _positive_int(value: str) -> int:

@@ -109,6 +109,21 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(MODULE._redact(result)["token"], "[redacted]")
         self.assertEqual(MODULE._redact("reply secret-token", ("secret-token",)), "reply [redacted]")
 
+    def test_tool_error_exposes_only_sanitized_detail(self) -> None:
+        payload = {
+            "result": {
+                "isError": True,
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "recipient Primus rejected token=secret-token",
+                    }
+                ],
+            }
+        }
+        with self.assertRaisesRegex(MODULE.AgentMailAuthError, "recipient Primus rejected token=\\[redacted\\]"):
+            MODULE._tool_result(payload, secrets=("secret-token",))
+
     @mock.patch.object(MODULE.request, "urlopen")
     def test_each_request_uses_a_fresh_json_rpc_id(self, mocked_urlopen: mock.Mock) -> None:
         mocked_urlopen.return_value = FakeResponse(
