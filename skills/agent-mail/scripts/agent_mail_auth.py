@@ -318,6 +318,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
     subparsers.add_parser("agents", help="List agents registered in the active project")
 
+    contact_request = subparsers.add_parser(
+        "contact-request",
+        help="Request another registered agent's approval for contact",
+    )
+    contact_request.add_argument("--to", type=_recipient_name, required=True)
+    contact_request.add_argument("--reason-file", type=Path, required=True)
+    contact_request.add_argument("--ttl-seconds", type=_positive_int, default=7 * 24 * 3600)
+
     reply = subparsers.add_parser("reply", help="Reply in an existing Agent Mail thread")
     reply.add_argument("--message-id", type=_positive_int, required=True)
     reply.add_argument("--body-file", type=Path, required=True)
@@ -363,6 +371,20 @@ def main(argv: list[str] | None = None) -> int:
             result = _call_resource(
                 identity,
                 f"resource://agents/{_project_slug(identity['AGENT_MAIL_PROJECT'])}",
+            )
+        elif args.operation == "contact-request":
+            result = _call_tool(
+                identity,
+                "request_contact",
+                {
+                    "project_key": common["project_key"],
+                    "from_agent": common["agent_name"],
+                    "to_agent": args.to,
+                    "reason": _body_from_file(args.reason_file),
+                    "ttl_seconds": args.ttl_seconds,
+                    "registration_token": identity["_token"],
+                    "register_if_missing": False,
+                },
             )
         elif args.operation == "reply":
             result = _call_tool(

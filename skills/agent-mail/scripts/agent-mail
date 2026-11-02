@@ -54,7 +54,7 @@ fi
 launcher_path="$(readlink -f -- "${BASH_SOURCE[0]}")"
 script_dir="$(CDPATH= cd -- "$(dirname -- "$launcher_path")" && pwd -P)"
 case "${1:-}" in
-  inbox|agents|reply|send|ack)
+  inbox|agents|contact-request|reply|send|ack)
     exec "$python_bin" -P "$script_dir/agent_mail_auth.py" "$@"
     ;;
 esac

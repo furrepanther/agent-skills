@@ -63,6 +63,21 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(MODULE._parse_args(["agents"]).operation, "agents")
         self.assertEqual(MODULE._project_slug("/home/Antigravity"), "home-antigravity")
 
+    def test_contact_request_parses_a_bounded_explicit_request(self) -> None:
+        args = MODULE._parse_args(
+            [
+                "contact-request",
+                "--to",
+                "RoseStone",
+                "--reason-file",
+                "/tmp/contact.md",
+                "--ttl-seconds",
+                "3600",
+            ]
+        )
+        self.assertEqual(args.to, "RoseStone")
+        self.assertEqual(args.ttl_seconds, 3600)
+
     def test_send_parses_only_explicit_validated_recipients(self) -> None:
         args = MODULE._parse_args(
             [
@@ -218,6 +233,46 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(arguments["importance"], "high")
         self.assertTrue(arguments["ack_required"])
         self.assertFalse(arguments["auto_contact_if_blocked"])
+
+    @mock.patch.object(MODULE, "_call_tool")
+    @mock.patch.object(MODULE, "_load_identity")
+    @mock.patch.object(MODULE, "_identity_path")
+    def test_contact_request_never_auto_registers_or_accepts(
+        self,
+        _identity_path: mock.Mock,
+        load_identity: mock.Mock,
+        call_tool: mock.Mock,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            reason_path = Path(directory) / "contact.md"
+            reason_path.write_text("Coordinate a local-only router diagnosis.\n", encoding="utf-8")
+            load_identity.return_value = {
+                "AGENT_MAIL_PROJECT": "/tmp/project",
+                "AGENT_MAIL_AGENT": "Datacube",
+                "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+                "_token": "secret-token",
+            }
+            call_tool.return_value = {"status": "pending"}
+            with mock.patch("sys.stdout", new_callable=io.StringIO):
+                with mock.patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "agent_mail_auth.py",
+                        "contact-request",
+                        "--to",
+                        "RoseStone",
+                        "--reason-file",
+                        str(reason_path),
+                    ],
+                ):
+                    self.assertEqual(MODULE.main(), 0)
+
+        tool_name, arguments = call_tool.call_args.args[1:]
+        self.assertEqual(tool_name, "request_contact")
+        self.assertEqual(arguments["to_agent"], "RoseStone")
+        self.assertEqual(arguments["registration_token"], "secret-token")
+        self.assertFalse(arguments["register_if_missing"])
 
 
 if __name__ == "__main__":

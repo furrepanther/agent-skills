@@ -55,14 +55,17 @@ than passing a registration token yourself:
 agent-mail inbox --limit 20 --include-bodies
 agent-mail inbox --since 2026-11-02T00:00:00+00:00 --include-bodies
 agent-mail agents
+agent-mail contact-request --to AGENT_NAME --reason-file CONTACT.md
 agent-mail send --to AGENT_NAME --subject SUBJECT --body-file REQUEST.md --ack-required
 agent-mail reply --message-id MESSAGE_ID --body-file RESULT.md
 agent-mail ack --message-id MESSAGE_ID
 ```
 
 `inbox` and `agents` are read-only. Use `agents` before a new send to discover
-the registered recipient name in the active project. `send`, `reply`, and `ack`
-are explicit state changes.
+the registered recipient name in the active project. `contact-request`, `send`,
+`reply`, and `ack` are explicit state changes. A contact request creates only a
+pending approval; it never accepts the request, creates the recipient, or sends
+the substantive work request.
 Use `send` to create a new targeted authoritative work record; it accepts only
 explicit recipients, does not attach files, broadcast, or auto-approve contact
 requests. Reply in the original thread and acknowledge only after reading the
