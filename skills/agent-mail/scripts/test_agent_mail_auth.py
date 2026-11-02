@@ -63,6 +63,9 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(MODULE._parse_args(["agents"]).operation, "agents")
         self.assertEqual(MODULE._project_slug("/home/Antigravity"), "home-antigravity")
 
+    def test_contacts_is_a_read_only_operation(self) -> None:
+        self.assertEqual(MODULE._parse_args(["contacts"]).operation, "contacts")
+
     def test_contact_request_parses_a_bounded_explicit_request(self) -> None:
         args = MODULE._parse_args(
             [
@@ -273,6 +276,31 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(arguments["to_agent"], "RoseStone")
         self.assertEqual(arguments["registration_token"], "secret-token")
         self.assertFalse(arguments["register_if_missing"])
+
+    @mock.patch.object(MODULE, "_call_tool")
+    @mock.patch.object(MODULE, "_load_identity")
+    @mock.patch.object(MODULE, "_identity_path")
+    def test_contacts_uses_managed_identity(
+        self,
+        _identity_path: mock.Mock,
+        load_identity: mock.Mock,
+        call_tool: mock.Mock,
+    ) -> None:
+        load_identity.return_value = {
+            "AGENT_MAIL_PROJECT": "/tmp/project",
+            "AGENT_MAIL_AGENT": "Datacube",
+            "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+            "_token": "secret-token",
+        }
+        call_tool.return_value = [{"to": "RoseStone", "status": "approved"}]
+        with mock.patch("sys.stdout", new_callable=io.StringIO):
+            with mock.patch.object(sys, "argv", ["agent_mail_auth.py", "contacts"]):
+                self.assertEqual(MODULE.main(), 0)
+
+        tool_name, arguments = call_tool.call_args.args[1:]
+        self.assertEqual(tool_name, "list_contacts")
+        self.assertEqual(arguments["agent_name"], "Datacube")
+        self.assertEqual(arguments["registration_token"], "secret-token")
 
 
 if __name__ == "__main__":

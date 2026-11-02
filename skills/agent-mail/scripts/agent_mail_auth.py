@@ -317,6 +317,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     inbox.add_argument("--since", dest="since_ts", metavar="ISO_8601")
 
     subparsers.add_parser("agents", help="List agents registered in the active project")
+    subparsers.add_parser("contacts", help="List the caller's outbound contact approvals")
 
     contact_request = subparsers.add_parser(
         "contact-request",
@@ -371,6 +372,15 @@ def main(argv: list[str] | None = None) -> int:
             result = _call_resource(
                 identity,
                 f"resource://agents/{_project_slug(identity['AGENT_MAIL_PROJECT'])}",
+            )
+        elif args.operation == "contacts":
+            result = _call_tool(
+                identity,
+                "list_contacts",
+                {
+                    **common,
+                    "registration_token": identity["_token"],
+                },
             )
         elif args.operation == "contact-request":
             result = _call_tool(
