@@ -22,13 +22,37 @@ store and SLIM's control-plane CLI.
 - Do not substitute `slimctl`: it manages SLIM nodes/control-plane resources,
   not mailbox messages.
 
+## Preflight and path discipline
+
+Before an operation directed at Primus, run:
+
+```bash
+scripts/verify-slim-mailbox.sh --require-configured-peer primus
+```
+
+The preflight verifies the host-specific launcher path and that `primus` is a
+configured mailbox peer. It does not prove a live delivery route.
+
+- `sessions: []` means the mailbox is idle; it is neither a successful live
+  delivery nor evidence that the peer is down.
+- Use one bounded `slim-runner ping primus` only when a live route check is
+  actually needed. A timeout or `ok: false` is an unavailable/unknown result;
+  preserve the result and repair the configured transport rather than sending
+  repeated pings or switching transports.
+- A preflight exit of `69` means the intended peer is not configured. An exit
+  of `78` means the launcher/path or its local status request is invalid.
+- The Agent Mail loopback bridge (`127.0.0.1:18766`) and any legacy alternate
+  SSH listener are not SLIM mailbox paths. Do not substitute either one for
+  this launcher.
+
 ## Safe mailbox operations
 
 Use the launcher, never a hand-built Python command, Unix-socket request, raw
 SSH session, alternate user, or alternate TCP port.
 
 - `slim-runner status` reports the local daemon's configured peer/session
-  state.  It is not an end-to-end delivery proof.
+  state. It is not an end-to-end delivery proof; an idle session list is
+  expected before the first exchange.
 - `slim-runner ping primus` is the bounded live transport probe.  Use it only
   when a live peer check is needed.
 - `slim-runner inbox --channel CHANNEL --limit N` is read-only.  Retrieved
