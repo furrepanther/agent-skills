@@ -58,7 +58,7 @@ agent-mail agents
 agent-mail contacts
 agent-mail contact-request --to AGENT_NAME --reason-file CONTACT.md
 agent-mail send --to AGENT_NAME --subject SUBJECT --body-file REQUEST.md --ack-required
-agent-mail reply --message-id MESSAGE_ID --body-file RESULT.md
+agent-mail reply --message-id MESSAGE_ID --to ORIGINAL_SENDER --body-file RESULT.md
 agent-mail ack --message-id MESSAGE_ID
 ```
 
@@ -72,7 +72,10 @@ the substantive work request.
 Use `send` to create a new targeted authoritative work record; it accepts only
 explicit recipients, does not attach files, broadcast, or auto-approve contact
 requests. Reply in the original thread and acknowledge only after reading the
-message and determining its next action. The helper reads the host-managed
+message and determining its next action. The managed helper rejects
+self-addressed sends and requires an explicit non-self `--to` recipient for a
+reply, so an outbound record cannot be mistaken for peer contact. The helper
+reads the host-managed
 identity file only within its process, sends credentials only in the loopback
 request body, and redacts credential-shaped response fields. Do not source,
 print, or place identity-file values on a command line.

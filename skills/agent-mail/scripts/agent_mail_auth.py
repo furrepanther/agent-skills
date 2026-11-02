@@ -282,6 +282,20 @@ def _recipient_name(value: str) -> str:
     return name
 
 
+def _explicit_peer_recipients(values: list[str], sender_name: str) -> list[str]:
+    """Deduplicate explicit recipients and reject records addressed to the caller."""
+    recipients = list(dict.fromkeys(values))
+    if not recipients:
+        raise AgentMailAuthError("an explicit peer recipient is required")
+    if len(recipients) > 5:
+        raise AgentMailAuthError("send and reply accept at most five explicit recipients")
+    if any(name.casefold() == sender_name.casefold() for name in recipients):
+        raise AgentMailAuthError(
+            "Agent Mail refuses a self-addressed send or reply; use an explicit peer recipient"
+        )
+    return recipients
+
+
 def _subject(value: str) -> str:
     subject = value.strip()
     if not subject or len(subject) > 160 or "\n" in subject or "\r" in subject:
@@ -329,6 +343,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
     reply = subparsers.add_parser("reply", help="Reply in an existing Agent Mail thread")
     reply.add_argument("--message-id", type=_positive_int, required=True)
+    reply.add_argument("--to", type=_recipient_name, action="append", required=True)
     reply.add_argument("--body-file", type=Path, required=True)
 
     send = subparsers.add_parser("send", help="Send a new authoritative Agent Mail message")
@@ -397,6 +412,7 @@ def main(argv: list[str] | None = None) -> int:
                 },
             )
         elif args.operation == "reply":
+            recipients = _explicit_peer_recipients(args.to, common["agent_name"])
             result = _call_tool(
                 identity,
                 "reply_message",
@@ -405,13 +421,12 @@ def main(argv: list[str] | None = None) -> int:
                     "message_id": args.message_id,
                     "sender_name": common["agent_name"],
                     "sender_token": identity["_token"],
+                    "to": recipients,
                     "body_md": _body_from_file(args.body_file),
                 },
             )
         elif args.operation == "send":
-            recipients = list(dict.fromkeys(args.to))
-            if len(recipients) > 5:
-                raise AgentMailAuthError("send accepts at most five explicit recipients")
+            recipients = _explicit_peer_recipients(args.to, common["agent_name"])
             result = _call_tool(
                 identity,
                 "send_message",

@@ -81,6 +81,25 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(args.to, "RoseStone")
         self.assertEqual(args.ttl_seconds, 3600)
 
+    def test_reply_requires_an_explicit_peer_recipient(self) -> None:
+        with mock.patch("sys.stderr", new_callable=io.StringIO):
+            with self.assertRaises(SystemExit):
+                MODULE._parse_args(
+                    ["reply", "--message-id", "12026", "--body-file", "/tmp/reply.md"]
+                )
+        args = MODULE._parse_args(
+            [
+                "reply",
+                "--message-id",
+                "12026",
+                "--to",
+                "TealEagle",
+                "--body-file",
+                "/tmp/reply.md",
+            ]
+        )
+        self.assertEqual(args.to, ["TealEagle"])
+
     def test_send_parses_only_explicit_validated_recipients(self) -> None:
         args = MODULE._parse_args(
             [
@@ -115,6 +134,14 @@ class AgentMailAuthTests(unittest.TestCase):
                 MODULE._parse_args(
                     ["send", "--to", "Primus", "--subject", "invalid\nsubject", "--body-file", "/tmp/request.md"]
                 )
+
+    def test_explicit_peer_recipients_rejects_the_caller(self) -> None:
+        with self.assertRaisesRegex(MODULE.AgentMailAuthError, "self-addressed"):
+            MODULE._explicit_peer_recipients(["Datacube"], "datacube")
+        self.assertEqual(
+            MODULE._explicit_peer_recipients(["TealEagle", "TealEagle"], "Datacube"),
+            ["TealEagle"],
+        )
 
     @mock.patch.object(MODULE.request, "urlopen")
     def test_inbox_request_keeps_token_in_body_and_redacts_output(self, mocked_urlopen: mock.Mock) -> None:
@@ -236,6 +263,47 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(arguments["importance"], "high")
         self.assertTrue(arguments["ack_required"])
         self.assertFalse(arguments["auto_contact_if_blocked"])
+
+    @mock.patch.object(MODULE, "_call_tool")
+    @mock.patch.object(MODULE, "_load_identity")
+    @mock.patch.object(MODULE, "_identity_path")
+    def test_reply_uses_an_explicit_peer_recipient(
+        self,
+        _identity_path: mock.Mock,
+        load_identity: mock.Mock,
+        call_tool: mock.Mock,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            body_path = Path(directory) / "reply.md"
+            body_path.write_text("Please return the review result.\n", encoding="utf-8")
+            load_identity.return_value = {
+                "AGENT_MAIL_PROJECT": "/tmp/project",
+                "AGENT_MAIL_AGENT": "Datacube",
+                "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+                "_token": "secret-token",
+            }
+            call_tool.return_value = {"count": 1}
+            with mock.patch("sys.stdout", new_callable=io.StringIO):
+                with mock.patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "agent_mail_auth.py",
+                        "reply",
+                        "--message-id",
+                        "12026",
+                        "--to",
+                        "TealEagle",
+                        "--body-file",
+                        str(body_path),
+                    ],
+                ):
+                    self.assertEqual(MODULE.main(), 0)
+
+        tool_name, arguments = call_tool.call_args.args[1:]
+        self.assertEqual(tool_name, "reply_message")
+        self.assertEqual(arguments["to"], ["TealEagle"])
+        self.assertEqual(arguments["message_id"], 12026)
 
     @mock.patch.object(MODULE, "_call_tool")
     @mock.patch.object(MODULE, "_load_identity")
