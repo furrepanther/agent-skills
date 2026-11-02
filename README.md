@@ -98,6 +98,7 @@ Skills work seamlessly with **Command Code**  providing consistent, high-quality
 
 ### Workflow Automation
 
+- **[Agent Mail](skills/agent-mail/)** - Coordinates authoritative cross-host work intake, contact approval, acknowledgements, and bounded Agent Mail replies without confusing advisory transport signals for decisions.
 - **[File Organizer](skills/file-organizer/)** - Intelligently organizes files and folders by understanding context, finding duplicates, and suggesting better organizational structures.
 - **[Invoice Organizer](skills/invoice-organizer/)** - Automatically organizes invoices and receipts for tax preparation by reading files, extracting information, and renaming consistently.
 - **[Raffle Winner Picker](skills/raffle-winner-picker/)** - Randomly selects winners from lists, spreadsheets, or Google Sheets for giveaways and contests with cryptographically secure randomness.
