@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -57,6 +59,41 @@ class AgentMailAuthTests(unittest.TestCase):
         args = MODULE._parse_args(["inbox", "--since", "2026-11-02T16:00:00+00:00"])
         self.assertEqual(args.since_ts, "2026-11-02T16:00:00+00:00")
 
+    def test_send_parses_only_explicit_validated_recipients(self) -> None:
+        args = MODULE._parse_args(
+            [
+                "send",
+                "--to",
+                "Primus",
+                "--to",
+                "Primus",
+                "--subject",
+                "Router residency check",
+                "--body-file",
+                "/tmp/request.md",
+                "--importance",
+                "high",
+                "--ack-required",
+                "--topic",
+                "memory-fabric",
+            ]
+        )
+        self.assertEqual(args.to, ["Primus", "Primus"])
+        self.assertEqual(args.importance, "high")
+        self.assertTrue(args.ack_required)
+        self.assertEqual(args.topic, "memory-fabric")
+
+    def test_send_rejects_whitespace_recipient_and_multiline_subject(self) -> None:
+        with mock.patch("sys.stderr", new_callable=io.StringIO):
+            with self.assertRaises(SystemExit):
+                MODULE._parse_args(
+                    ["send", "--to", "not a name", "--subject", "valid", "--body-file", "/tmp/request.md"]
+                )
+            with self.assertRaises(SystemExit):
+                MODULE._parse_args(
+                    ["send", "--to", "Primus", "--subject", "invalid\nsubject", "--body-file", "/tmp/request.md"]
+                )
+
     @mock.patch.object(MODULE.request, "urlopen")
     def test_inbox_request_keeps_token_in_body_and_redacts_output(self, mocked_urlopen: mock.Mock) -> None:
         mocked_urlopen.return_value = FakeResponse(
@@ -87,6 +124,55 @@ class AgentMailAuthTests(unittest.TestCase):
         second_payload = json.loads(mocked_urlopen.call_args_list[1].args[0].data.decode("utf-8"))
         self.assertNotEqual(first_payload["id"], second_payload["id"])
         self.assertTrue(first_payload["id"].startswith("agent-mail-managed-cli-"))
+
+    @mock.patch.object(MODULE, "_call_tool")
+    @mock.patch.object(MODULE, "_load_identity")
+    @mock.patch.object(MODULE, "_identity_path")
+    def test_send_uses_managed_identity_and_disables_auto_contact(
+        self,
+        _identity_path: mock.Mock,
+        load_identity: mock.Mock,
+        call_tool: mock.Mock,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            body_path = Path(directory) / "request.md"
+            body_path.write_text("Please inspect the router.\n", encoding="utf-8")
+            load_identity.return_value = {
+                "AGENT_MAIL_PROJECT": "/tmp/project",
+                "AGENT_MAIL_AGENT": "Datacube",
+                "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+                "_token": "secret-token",
+            }
+            call_tool.return_value = {"count": 1}
+            with mock.patch("sys.stdout", new_callable=io.StringIO):
+                with mock.patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "agent_mail_auth.py",
+                        "send",
+                        "--to",
+                        "Primus",
+                        "--to",
+                        "Primus",
+                        "--subject",
+                        "Router residency check",
+                        "--body-file",
+                        str(body_path),
+                        "--importance",
+                        "high",
+                        "--ack-required",
+                    ],
+                ):
+                    self.assertEqual(MODULE.main(), 0)
+
+        tool_name, arguments = call_tool.call_args.args[1:]
+        self.assertEqual(tool_name, "send_message")
+        self.assertEqual(arguments["sender_token"], "secret-token")
+        self.assertEqual(arguments["to"], ["Primus"])
+        self.assertEqual(arguments["importance"], "high")
+        self.assertTrue(arguments["ack_required"])
+        self.assertFalse(arguments["auto_contact_if_blocked"])
 
 
 if __name__ == "__main__":

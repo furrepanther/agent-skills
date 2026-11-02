@@ -204,10 +204,35 @@ def _body_from_file(path: Path) -> str:
             raise OSError("not a regular file")
         body = path.read_text(encoding="utf-8")
     except OSError as exc:
-        raise AgentMailAuthError("reply body file is unavailable") from exc
+        raise AgentMailAuthError("message body file is unavailable") from exc
     if not body.strip() or len(body) > 12000:
-        raise AgentMailAuthError("reply body must contain 1 to 12000 characters")
+        raise AgentMailAuthError("message body must contain 1 to 12000 characters")
     return body
+
+
+def _recipient_name(value: str) -> str:
+    name = value.strip()
+    if not name or len(name) > 128 or any(character.isspace() for character in name):
+        raise argparse.ArgumentTypeError("recipient must be a nonempty Agent Mail name")
+    return name
+
+
+def _subject(value: str) -> str:
+    subject = value.strip()
+    if not subject or len(subject) > 160 or "\n" in subject or "\r" in subject:
+        raise argparse.ArgumentTypeError("subject must contain 1 to 160 characters on one line")
+    return subject
+
+
+def _topic(value: str) -> str:
+    topic = value.strip()
+    if (
+        not topic
+        or len(topic) > 64
+        or not all(character.isascii() and (character.isalnum() or character in "-_") for character in topic)
+    ):
+        raise argparse.ArgumentTypeError("topic must be 1 to 64 letters, digits, hyphens, or underscores")
+    return topic
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -224,6 +249,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     reply = subparsers.add_parser("reply", help="Reply in an existing Agent Mail thread")
     reply.add_argument("--message-id", type=_positive_int, required=True)
     reply.add_argument("--body-file", type=Path, required=True)
+
+    send = subparsers.add_parser("send", help="Send a new authoritative Agent Mail message")
+    send.add_argument("--to", type=_recipient_name, action="append", required=True)
+    send.add_argument("--subject", type=_subject, required=True)
+    send.add_argument("--body-file", type=Path, required=True)
+    send.add_argument("--importance", choices=("low", "normal", "high", "urgent"), default="normal")
+    send.add_argument("--ack-required", action="store_true")
+    send.add_argument("--topic", type=_topic)
 
     ack = subparsers.add_parser("ack", help="Acknowledge a handled Agent Mail message")
     ack.add_argument("--message-id", type=_positive_int, required=True)
@@ -264,6 +297,26 @@ def main(argv: list[str] | None = None) -> int:
                     "sender_name": common["agent_name"],
                     "sender_token": identity["_token"],
                     "body_md": _body_from_file(args.body_file),
+                },
+            )
+        elif args.operation == "send":
+            recipients = list(dict.fromkeys(args.to))
+            if len(recipients) > 5:
+                raise AgentMailAuthError("send accepts at most five explicit recipients")
+            result = _call_tool(
+                identity,
+                "send_message",
+                {
+                    "project_key": common["project_key"],
+                    "sender_name": common["agent_name"],
+                    "sender_token": identity["_token"],
+                    "to": recipients,
+                    "subject": args.subject,
+                    "body_md": _body_from_file(args.body_file),
+                    "importance": args.importance,
+                    "ack_required": bool(args.ack_required),
+                    "auto_contact_if_blocked": False,
+                    **({"topic": args.topic} if args.topic else {}),
                 },
             )
         else:

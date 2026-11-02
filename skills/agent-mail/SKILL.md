@@ -54,16 +54,19 @@ than passing a registration token yourself:
 ```bash
 agent-mail inbox --limit 20 --include-bodies
 agent-mail inbox --since 2026-11-02T00:00:00+00:00 --include-bodies
+agent-mail send --to AGENT_NAME --subject SUBJECT --body-file REQUEST.md --ack-required
 agent-mail reply --message-id MESSAGE_ID --body-file RESULT.md
 agent-mail ack --message-id MESSAGE_ID
 ```
 
-`inbox` is read-only. `reply` and `ack` are explicit state changes; reply in
-the original thread and acknowledge only after reading the message and
-determining its next action. The helper reads the host-managed identity file
-only within its process, sends credentials only in the loopback request body,
-and redacts credential-shaped response fields. Do not source, print, or place
-identity-file values on a command line.
+`inbox` is read-only. `send`, `reply`, and `ack` are explicit state changes.
+Use `send` to create a new targeted authoritative work record; it accepts only
+explicit recipients, does not attach files, broadcast, or auto-approve contact
+requests. Reply in the original thread and acknowledge only after reading the
+message and determining its next action. The helper reads the host-managed
+identity file only within its process, sends credentials only in the loopback
+request body, and redacts credential-shaped response fields. Do not source,
+print, or place identity-file values on a command line.
 
 ## Safe intake
 
