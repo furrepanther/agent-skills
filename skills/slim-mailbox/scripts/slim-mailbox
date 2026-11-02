@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Canonical SLIM mailbox launcher.  This is a client selector, not a daemon
+# manager: it never starts, stops, or reconfigures SLIM.
+set -euo pipefail
+
+host_name="$(hostname -s 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+case "$host_name" in
+  datacube*)
+    launcher="/mnt/f/Production/antigravity/slim-runner"
+    ;;
+  *)
+    if ! launcher="$(command -v slim-runner)"; then
+      printf '%s\n' 'SLIM mailbox launcher is unavailable: slim-runner is not on PATH' >&2
+      exit 78
+    fi
+    ;;
+esac
+
+if [ ! -x "$launcher" ]; then
+  printf 'SLIM mailbox launcher is not executable: %s\n' "$launcher" >&2
+  exit 78
+fi
+
+resolved="$(readlink -f "$launcher")"
+if [ ! -x "$resolved" ]; then
+  printf 'SLIM mailbox launcher target is not executable: %s\n' "$resolved" >&2
+  exit 78
+fi
+
+if [[ "$host_name" == datacube* ]] && \
+  [ "$resolved" != "/mnt/f/Production/antigravity/slim-runner" ]; then
+  printf 'SLIM mailbox launcher drift on Datacube: expected %s, got %s\n' \
+    '/mnt/f/Production/antigravity/slim-runner' "$resolved" >&2
+  exit 78
+fi
+
+if [ "${1:-}" = "--launcher-path" ]; then
+  if [ "$#" -ne 1 ]; then
+    printf '%s\n' 'usage: slim-mailbox --launcher-path' >&2
+    exit 64
+  fi
+  printf '%s\n' "$resolved"
+  exit 0
+fi
+
+exec "$resolved" "$@"
