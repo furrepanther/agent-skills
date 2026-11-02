@@ -48,7 +48,11 @@ if [[ "$verify_only" == "1" ]]; then
   exit 0
 fi
 
-script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+# The host shortcut is deliberately a symlink into the shared skill tree.
+# Resolve the launcher first so helper files are found beside the real script,
+# not beside the shortcut.
+launcher_path="$(readlink -f -- "${BASH_SOURCE[0]}")"
+script_dir="$(CDPATH= cd -- "$(dirname -- "$launcher_path")" && pwd -P)"
 case "${1:-}" in
   inbox|reply|ack)
     exec "$python_bin" -P "$script_dir/agent_mail_auth.py" "$@"
