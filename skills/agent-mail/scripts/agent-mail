@@ -48,6 +48,13 @@ if [[ "$verify_only" == "1" ]]; then
   exit 0
 fi
 
+script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+case "${1:-}" in
+  inbox|reply|ack)
+    exec "$python_bin" -P "$script_dir/agent_mail_auth.py" "$@"
+    ;;
+esac
+
 case ":${PYTHONPATH:-}:" in
   *":$source_root:"*) ;;
   *) export PYTHONPATH="$source_root${PYTHONPATH:+:$PYTHONPATH}" ;;

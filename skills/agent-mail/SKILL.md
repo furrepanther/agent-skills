@@ -34,6 +34,23 @@ skill helper must be used there. A missing managed Python or source root is a
 path-deployment defect; report it and repair the shared deployment rather than
 falling back to an arbitrary interpreter or checkout.
 
+For authenticated routine intake, use the managed-identity commands rather
+than passing a registration token yourself:
+
+```bash
+agent-mail inbox --limit 20 --include-bodies
+agent-mail inbox --since 2026-11-02T00:00:00+00:00 --include-bodies
+agent-mail reply --message-id MESSAGE_ID --body-file RESULT.md
+agent-mail ack --message-id MESSAGE_ID
+```
+
+`inbox` is read-only. `reply` and `ack` are explicit state changes; reply in
+the original thread and acknowledge only after reading the message and
+determining its next action. The helper reads the host-managed identity file
+only within its process, sends credentials only in the loopback request body,
+and redacts credential-shaped response fields. Do not source, print, or place
+identity-file values on a command line.
+
 ## Safe intake
 
 At turn start and before a consequential action, check the authenticated Agent
