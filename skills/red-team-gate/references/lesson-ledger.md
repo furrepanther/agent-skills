@@ -1,4 +1,26 @@
-# Red-Team-Gate Lesson Transfer Window
+# Red-Team-Gate Lesson Transfer Windows
+
+## Active Window: Memory Fabric promotion, 2026-11-03
+
+window_id: `red-team-gate-memory-fabric-promotion-20261103`
+target_executions: 1
+execution_limit: hard cap of 1 counted execution in this explicitly authorized window
+window_contract: bounded, non-sliding promotion decision for the current Memory Fabric candidate
+authorization: user-directed rerun and promotion authorization in this conversation on 2026-11-03
+scope: current Mem0/SimpleMem repair candidate, explicit-previous-identity quiesce delta, binary-safe post-install verifier, semantic indexing/retrieval, and production cutover evidence
+counting_rule: Count the execution when its complete local-router review packet is dispatched.
+active_execution: none
+next_execution: 1
+completed_executions: 0
+remaining_executions: 1
+cap_definition: This is a new, explicitly authorized window; it does not reset, modify, or erase the closed historical window below.
+status: open
+
+No production claim may be made from this window until its one execution is
+complete, every finding is dispositioned, the packet is empty-boat, and the
+separately authorized end-to-end test is also empty-boat.
+
+## Archived Window: `red-team-gate-lesson-window-20261022`
 
 window_id: `red-team-gate-lesson-window-20261022`
 target_executions: 15
