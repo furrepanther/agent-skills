@@ -57,6 +57,7 @@ agent-mail inbox --since 2026-11-02T00:00:00+00:00 --include-bodies
 agent-mail agents
 agent-mail contacts
 agent-mail contact-request --to AGENT_NAME --reason-file CONTACT.md
+agent-mail contact-respond --from REQUESTING_AGENT --accept
 agent-mail send --to AGENT_NAME --subject SUBJECT --body-file REQUEST.md --ack-required
 agent-mail reply --message-id MESSAGE_ID --to ORIGINAL_SENDER --body-file RESULT.md
 agent-mail ack --message-id MESSAGE_ID
@@ -65,10 +66,13 @@ agent-mail ack --message-id MESSAGE_ID
 `inbox`, `agents`, and `contacts` are read-only. Use `agents` before a new send
 to discover the registered recipient name in the active project. Use `contacts`
 to verify the caller's outbound approval state; do not infer approval from a
-reply, delivery record, or SLIM event. `contact-request`, `send`,
-`reply`, and `ack` are explicit state changes. A contact request creates only a
-pending approval; it never accepts the request, creates the recipient, or sends
-the substantive work request.
+reply, delivery record, or SLIM event. `contact-request`, `contact-respond`,
+`send`, `reply`, and `ack` are explicit state changes. A contact request creates
+only a pending approval; it never accepts the request, creates the recipient,
+or sends the substantive work request. `contact-respond` requires both the
+requesting agent and an explicit `--accept` or `--deny`; use it only after
+reading the authenticated inbound request and preserve its result as the
+contact-approval receipt.
 Use `send` to create a new targeted authoritative work record; it accepts only
 explicit recipients, does not attach files, broadcast, or auto-approve contact
 requests. Reply in the original thread and acknowledge only after reading the

@@ -341,6 +341,16 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     contact_request.add_argument("--reason-file", type=Path, required=True)
     contact_request.add_argument("--ttl-seconds", type=_positive_int, default=7 * 24 * 3600)
 
+    contact_respond = subparsers.add_parser(
+        "contact-respond",
+        help="Explicitly accept or deny an inbound contact request",
+    )
+    contact_respond.add_argument("--from", dest="from_agent", type=_recipient_name, required=True)
+    contact_decision = contact_respond.add_mutually_exclusive_group(required=True)
+    contact_decision.add_argument("--accept", dest="accept", action="store_true")
+    contact_decision.add_argument("--deny", dest="accept", action="store_false")
+    contact_respond.add_argument("--ttl-seconds", type=_positive_int, default=30 * 24 * 3600)
+
     reply = subparsers.add_parser("reply", help="Reply in an existing Agent Mail thread")
     reply.add_argument("--message-id", type=_positive_int, required=True)
     reply.add_argument("--to", type=_recipient_name, action="append", required=True)
@@ -409,6 +419,20 @@ def main(argv: list[str] | None = None) -> int:
                     "ttl_seconds": args.ttl_seconds,
                     "registration_token": identity["_token"],
                     "register_if_missing": False,
+                },
+            )
+        elif args.operation == "contact-respond":
+            from_agent = _explicit_peer_recipients([args.from_agent], common["agent_name"])[0]
+            result = _call_tool(
+                identity,
+                "respond_contact",
+                {
+                    "project_key": common["project_key"],
+                    "to_agent": common["agent_name"],
+                    "from_agent": from_agent,
+                    "accept": bool(args.accept),
+                    "ttl_seconds": args.ttl_seconds,
+                    "registration_token": identity["_token"],
                 },
             )
         elif args.operation == "reply":

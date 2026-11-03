@@ -81,6 +81,20 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(args.to, "RoseStone")
         self.assertEqual(args.ttl_seconds, 3600)
 
+    def test_contact_respond_requires_an_explicit_decision(self) -> None:
+        with mock.patch("sys.stderr", new_callable=io.StringIO):
+            with self.assertRaises(SystemExit):
+                MODULE._parse_args(["contact-respond", "--from", "TealEagle"])
+        accepted = MODULE._parse_args(
+            ["contact-respond", "--from", "TealEagle", "--accept", "--ttl-seconds", "3600"]
+        )
+        denied = MODULE._parse_args(
+            ["contact-respond", "--from", "TealEagle", "--deny"]
+        )
+        self.assertTrue(accepted.accept)
+        self.assertEqual(accepted.ttl_seconds, 3600)
+        self.assertFalse(denied.accept)
+
     def test_reply_requires_an_explicit_peer_recipient(self) -> None:
         with mock.patch("sys.stderr", new_callable=io.StringIO):
             with self.assertRaises(SystemExit):
@@ -344,6 +358,77 @@ class AgentMailAuthTests(unittest.TestCase):
         self.assertEqual(arguments["to_agent"], "RoseStone")
         self.assertEqual(arguments["registration_token"], "secret-token")
         self.assertFalse(arguments["register_if_missing"])
+
+    @mock.patch.object(MODULE, "_call_tool")
+    @mock.patch.object(MODULE, "_load_identity")
+    @mock.patch.object(MODULE, "_identity_path")
+    def test_contact_respond_uses_the_managed_receiving_identity(
+        self,
+        _identity_path: mock.Mock,
+        load_identity: mock.Mock,
+        call_tool: mock.Mock,
+    ) -> None:
+        load_identity.return_value = {
+            "AGENT_MAIL_PROJECT": "/tmp/project",
+            "AGENT_MAIL_AGENT": "Datacube",
+            "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+            "_token": "secret-token",
+        }
+        call_tool.return_value = {"approved": True}
+        with mock.patch("sys.stdout", new_callable=io.StringIO):
+            with mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "agent_mail_auth.py",
+                    "contact-respond",
+                    "--from",
+                    "TealEagle",
+                    "--accept",
+                    "--ttl-seconds",
+                    "3600",
+                ],
+            ):
+                self.assertEqual(MODULE.main(), 0)
+
+        tool_name, arguments = call_tool.call_args.args[1:]
+        self.assertEqual(tool_name, "respond_contact")
+        self.assertEqual(arguments["project_key"], "/tmp/project")
+        self.assertEqual(arguments["to_agent"], "Datacube")
+        self.assertEqual(arguments["from_agent"], "TealEagle")
+        self.assertTrue(arguments["accept"])
+        self.assertEqual(arguments["ttl_seconds"], 3600)
+        self.assertEqual(arguments["registration_token"], "secret-token")
+
+    @mock.patch.object(MODULE, "_call_tool")
+    @mock.patch.object(MODULE, "_load_identity")
+    @mock.patch.object(MODULE, "_identity_path")
+    def test_contact_respond_rejects_self_addressing(
+        self,
+        _identity_path: mock.Mock,
+        load_identity: mock.Mock,
+        call_tool: mock.Mock,
+    ) -> None:
+        load_identity.return_value = {
+            "AGENT_MAIL_PROJECT": "/tmp/project",
+            "AGENT_MAIL_AGENT": "Datacube",
+            "AGENT_MAIL_URL": "http://127.0.0.1:8766/api/",
+            "_token": "secret-token",
+        }
+        with mock.patch("sys.stderr", new_callable=io.StringIO):
+            with mock.patch.object(
+                sys,
+                "argv",
+                [
+                    "agent_mail_auth.py",
+                    "contact-respond",
+                    "--from",
+                    "Datacube",
+                    "--accept",
+                ],
+            ):
+                self.assertEqual(MODULE.main(), 2)
+        call_tool.assert_not_called()
 
     @mock.patch.object(MODULE, "_call_tool")
     @mock.patch.object(MODULE, "_load_identity")
