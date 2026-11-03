@@ -19,6 +19,19 @@ dispatch_artifact: `/tmp/memory-fabric-red-team-d934a1e.wdTIlg/review-packet.jso
 dispatch_packet_sha256: `69c1314b65a49bde55b4d43378533b632cf2586000dee46161e6dc3c3e900416`
 dispatch_candidate_revision: `d934a1e9f1b702b2999b0c3f2471d6f9f35d4cc5`
 
+corrective_packet_artifact: `/run/user/1001/antigravity-tmp/memory-fabric-red-team-1832fd4-r4.g5AmgO/review-packet.json`
+corrective_packet_sha256: `3f9e3d84ab853023f27901338b14fc580aa6ce582e3b8af8a1b1c90eb97653dc`
+corrective_candidate_revisions: `core:1832fd45ead5c8c2fe9e74e5072d80b505a456ff;simplemem:b905e1b3f9ffc1f1cb99292c60c2ded1256e21e6`
+corrective_execution_status: The same counted execution remains open. Its initial
+local-router attempt produced no completed reviewer decisions: the router
+reported all capacity admitted while independent worker-slot telemetry was
+idle, then became unavailable. This is a transport/evidence failure, not a
+review result or empty boat. The wrapper now fails closed on that contradictory
+capacity state and has a real 25-artifact Grumpy preflight regression. A
+corrective dispatch of this same open gate is pending current local-router
+recovery plus source-receipt reconciliation; it does not open a second
+promotion decision or increment the execution count.
+
 No production claim may be made from this window until its one execution is
 complete, every finding is dispositioned, the packet is empty-boat, and the
 separately authorized end-to-end test is also empty-boat.
