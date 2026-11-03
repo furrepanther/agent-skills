@@ -9,12 +9,15 @@ window_contract: bounded, non-sliding promotion decision for the current Memory 
 authorization: user-directed rerun and promotion authorization in this conversation on 2026-11-03
 scope: current Mem0/SimpleMem repair candidate, explicit-previous-identity quiesce delta, binary-safe post-install verifier, semantic indexing/retrieval, and production cutover evidence
 counting_rule: Count the execution when its complete local-router review packet is dispatched.
-active_execution: none
-next_execution: 1
+active_execution: 1
+next_execution: none
 completed_executions: 0
-remaining_executions: 1
+remaining_executions: 0
 cap_definition: This is a new, explicitly authorized window; it does not reset, modify, or erase the closed historical window below.
-status: open
+status: in_progress
+dispatch_artifact: `/tmp/memory-fabric-red-team-d934a1e.wdTIlg/review-packet.json`
+dispatch_packet_sha256: `69c1314b65a49bde55b4d43378533b632cf2586000dee46161e6dc3c3e900416`
+dispatch_candidate_revision: `d934a1e9f1b702b2999b0c3f2471d6f9f35d4cc5`
 
 No production claim may be made from this window until its one execution is
 complete, every finding is dispositioned, the packet is empty-boat, and the
