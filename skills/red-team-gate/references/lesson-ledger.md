@@ -209,7 +209,7 @@ review_result: `/tmp/clone-default-review-raw-v2/grumpy_final.result.json`
 
 status: closed
 counted: true
-ordinal 13 of total cap 15
+historical_ordinal: 13 (descriptive only; no execution cap)
 review_artifact: `/tmp/primus-review/storage-boundary-review-v2.result.json`
 scope: loud W: mechanical-disk latency policy, startup/fallback documentation, executable storage-boundary contract test, and canonical Memory Fabric record
 preflight: executable contract test passed with empty_boat=PASS warnings=0 errors=0; complete pointer-backed artifact transport was verified with exact SHA-256 digests
