@@ -19,6 +19,19 @@ it grants no tools, writes, external resolution, or promotion authority.
 This skill orchestrates review and evidence. It does not authorize source
 changes, external writes, cloud inference, or production mutation.
 
+## Diagnostic-only execution
+
+The canonical local Gate wrapper may run one review package for rapid,
+targeted diagnosis. These modes are evidence-gathering tools, not partial
+promotion gates: they must never be described as a full review, an empty boat,
+or promotion clearance. With no diagnostic selector, the wrapper must run the
+complete SDLC -> Solid Snake -> Grumpy sequence.
+
+Read [references/diagnostic-lanes.md](references/diagnostic-lanes.md) before
+using a diagnostic selector. It defines the exact arguments, required local
+route evidence, result labels, and the boundary between diagnostic and full
+gate evidence.
+
 ## Review continuity ledger
 
 [references/lesson-ledger.md](references/lesson-ledger.md) preserves reusable
