@@ -110,6 +110,14 @@ Use `acknowledge_message` only after the message has been read and its next
 action is known. Reply in the existing thread when reporting progress or a
 result so the evidence remains connected to the work order.
 
+## Completion receipts
+
+Before issuing, accepting, or relying on a completion receipt, read
+[the completion-receipt standard](references/completion-receipt-standard.md).
+It defines the minimum common evidence and the additional source/test coverage
+needed for code and review work. Delivery, acknowledgement, a clean subset,
+or a green command never alone establishes completion.
+
 ## Identity and credential handling
 
 Use the active host's managed identity environment or a maintained wrapper that
@@ -140,5 +148,6 @@ Before editing a shared source, work in a personal GitHub fork and isolated
 worktree under the shared GitHub root. Reserve the narrowly affected paths when
 the project supports reservations, and coordinate any conflict before editing.
 Return a compact Agent Mail result with changed paths, revision, verification,
-and any remaining blocker. Store durable operational lessons in Memory Fabric
-after the action; it does not replace the reply or acceptance evidence.
+and any remaining blocker, using the completion-receipt standard when the work
+is actually complete. Store durable operational lessons in Memory Fabric after
+the action; it does not replace the reply or acceptance evidence.
