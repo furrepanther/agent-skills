@@ -42,6 +42,12 @@ constraint, or a limit on an unrelated promotion gate.
 
 ## Hard boundaries
 
+- DeepHarness-RSI source transport is retired as a review and promotion lane.
+  Do not dispatch it, wait on it, or treat its receipt, storage record, or
+  transport state as a gate result. Use this Red-Team Gate with direct source
+  access and its required local evidence instead. Historical DeepHarness
+  material may be background context only; it can neither clear nor block a
+  current gate.
 - Route all substantive inference through `http://127.0.0.1:11888`; direct
   provider/model, cloud, or new fallback paths are prohibited. The
   environment-owned adapter contract is: exact loopback target, task-scoped
