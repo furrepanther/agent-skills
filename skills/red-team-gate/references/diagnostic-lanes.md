@@ -21,6 +21,21 @@ Selectors are mutually exclusive with one another, `--dry-run`, and
 typed-packet checks and local-only router preflight. External Solid Snake and
 Grumpy runners must still return their required local-route attestation.
 
+## Local SDLC completion budget
+
+The built-in SDLC package sends `--max-completion-tokens` with every local
+router request. Its default is `3072`; accepted values are `128` through
+`4096`. This bounds local-model completion latency and response size without
+changing lane selection or the required JSON result contract. If a capped
+completion cannot produce valid review JSON, the selected diagnostic package
+fails closed as `diagnostic_blocked`; the selector never falls back to another
+model, provider, or review lane.
+
+The local reviewer cannot open a listed filesystem path. Packet authors must
+put the bounded source excerpt needed for the decision in `diff`; paths are
+provenance only. The wrapper asks SDLC lanes for no more than three concise,
+nonduplicative findings so a valid JSON response fits the bounded completion.
+
 ## Result contract
 
 A diagnostic run must record all of the following:
