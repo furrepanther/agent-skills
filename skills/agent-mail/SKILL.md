@@ -137,6 +137,11 @@ Load the shared Agent Mail/SLIM coordination contract before remote execution:
 - Datacube: `/mnt/f/Production/antigravity/startup/common/AG_AGENT_MAIL_SLIM_COORDINATION_V1.md`
 - Primus: `/usr/production/runner-startup/common/AG_AGENT_MAIL_SLIM_COORDINATION_V1.md`
 
+The canonical Agent Mail identity for Primus is `RoseStone`. Address Primus
+work orders, replies, and status requests to `RoseStone`; do not use
+`SwiftCat` as a Primus Agent Mail recipient. Verify registered recipients with
+`agents` before initiating a new thread.
+
 Use Agent Mail for authority and durable evidence. SLIM may announce that mail
 is waiting, but the recipient must retrieve the authenticated original. Use the
 stable host-qualified identity aliases and the canonical OS user `antigravity`.
