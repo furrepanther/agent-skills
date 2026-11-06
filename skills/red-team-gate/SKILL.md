@@ -35,6 +35,11 @@ individual dispatch or repair retry by its risk, authority, and independent
 stop condition; do not use an arbitrary cumulative iteration count to stop a
 required gate.
 
+An explicit work order may impose a count limit for its named task and host
+when that limit has its own stated authority and stop condition. Apply it only
+within that declared scope; never generalize it into a default, a cross-host
+constraint, or a limit on an unrelated promotion gate.
+
 ## Hard boundaries
 
 - Route all substantive inference through `http://127.0.0.1:11888`; direct
