@@ -1,33 +1,34 @@
-# Red-Team-Gate Lesson Transfer Window
+# Red-Team-Gate Lesson Ledger
 
 window_id: `red-team-gate-lesson-window-20261022`
-target_executions: 15
-execution_limit: hard cap of 15 total counted executions
-window_contract: bounded, non-sliding 15-execution lesson window
-window_semantics: cumulative hard cap; no sliding reset within the window
-empty_boat_definition: no pending/in_progress/undispositioned counted entries; every counted entry has a disposition and no unresolved blocker
-counting_rule: Count an execution when the gate is dispatched, including the current run.
-active_execution: 15
-next_execution: none
-completed_executions: 15
-remaining_executions: 0
-cap_definition: target_executions is the hard cap on total counted executions, not a concurrency limit; active_execution is the current ordinal and may not exceed target_executions
-cap_enforcement: counted executions 14 and 15 are closed; the cumulative hard cap is reached and no new counted execution may be dispatched in this window
-status: closed
+target_executions: 15 (historical planning target)
+execution_limit: none
+window_contract: historical review grouping, retained for audit
+window_semantics: counts are descriptive only; they do not limit future review work
+empty_boat_definition: no pending/in_progress/undispositioned findings within the current review scope; every finding has a disposition and no unresolved blocker
+counting_rule: Record a review disposition when it is useful for lesson transfer; do not treat the record count as a limit.
+active_execution: none
+next_execution: determined by the current review need and authority
+completed_executions: 15 (historical)
+remaining_executions: not applicable
+cap_definition: none; a historical target is not a gate, authority boundary, or promotion blocker
+cap_enforcement: none
+status: historical window closed; further required review remains permitted
 
 ## Operating rule
 
-For each of the fifteen executions, compare the packet, transport, and review
-result with `SKILL.md`. If a reusable lesson is absent, update the skill or a
-linked reference before recording the run disposition. If it is already
-covered, record `already_reflected` and do not duplicate it. Keep this ledger
-bounded and free of secrets and high-volume telemetry.
+For each review disposition recorded here, compare the packet, transport, and
+review result with `SKILL.md`. If a reusable lesson is absent, update the skill
+or a linked reference before recording the disposition. If it is already
+covered, record `already_reflected` and do not duplicate it. Keep the ledger
+bounded in content and free of secrets and high-volume telemetry; its size
+does not constrain the reviews required for a safe decision.
 The ledger owns window counting and disposition state only; evidence atomicity,
 digest preservation, and fail-closed capacity are self-contained requirements
 of `SKILL.md`, not optional ledger fields.
-When `completed_executions` reaches `target_executions`, stop dispatching new
-counted executions until a new window id and target are explicitly established;
-corrective retries of the same open gate do not create a new promotion decision.
+Historical counts do not stop future review work. A review stops only when its
+scope reaches an evidence-supported decision, or when an external blocker is
+explicitly recorded and further progress requires authority or a state change.
 
 ## Execution 1 (current v6 review)
 

@@ -19,25 +19,21 @@ it grants no tools, writes, external resolution, or promotion authority.
 This skill orchestrates review and evidence. It does not authorize source
 changes, external writes, cloud inference, or production mutation.
 
-## Rolling lesson-transfer window
+## Review continuity ledger
 
-This is a bounded, non-sliding 15-execution lesson window with a cumulative hard cap of fifteen total
-counted executions, recorded in
-[references/lesson-ledger.md](references/lesson-ledger.md), count the current
-execution when it starts. Before dispatching each counted gate, read the
-ledger and compare the planned packet, transport, and review behavior against
-the lessons already captured here. After the gate completes, record only
-reusable lessons that are not already reflected in this skill or its linked
-references; update the skill/reference first, then append the run disposition
-and skill revision/digest to the ledger. A lesson that is already covered is
-recorded as `already_reflected`, not duplicated. Keep this window bounded to
-fifteen executions, preserve the ledger after closure for audit, and do not put
-high-volume run telemetry or secrets in it or in Memory Fabric.
-When `completed_executions` reaches `target_executions`, stop dispatching new
-counted executions until a new window id and target are explicitly established;
-corrective retries of the same open gate do not create a new promotion decision.
-The cap is cumulative within the window, not a sliding limit; counted
-executions never reset until a new window id is explicitly established.
+[references/lesson-ledger.md](references/lesson-ledger.md) preserves reusable
+lessons and historical review dispositions. Read it before dispatching a gate
+and record a new reusable lesson only after it is reflected in this skill or a
+linked reference. Record already-covered lessons as `already_reflected`, and
+keep secrets and high-volume telemetry out of the ledger and Memory Fabric.
+
+Historical `target_executions`, `completed_executions`, or window-status
+fields are audit metadata, never a global execution cap, promotion blocker, or
+requirement to open a new window. Continue the review, correction, and
+validation work needed to reach an evidence-supported decision. Bound each
+individual dispatch or repair retry by its risk, authority, and independent
+stop condition; do not use an arbitrary cumulative iteration count to stop a
+required gate.
 
 ## Hard boundaries
 
