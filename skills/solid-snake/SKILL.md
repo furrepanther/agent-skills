@@ -77,6 +77,18 @@ Local-router safety limits:
 
 If packet construction fails, wedges the router, exceeds context, or forces excessive truncation, update this skill with the concrete failure mode and the corrected packet pattern before retrying. This is part of the agent contract, not housekeeping.
 
+### Schema-truncation recovery
+
+When a schema-bearing reviewer response is truncated and therefore cannot be
+parsed, do not interpret its partial text as a completed review or start a
+parallel duplicate. Preserve the raw response as diagnostic evidence, reduce
+the packet to the exact disputed code and regression test, and include that
+test verbatim rather than relying on a prose test summary. A single retry may
+use a response budget large enough for the required schema (normally 4096
+tokens) while keeping the input packet within the 10-12 KB local-router
+envelope. Record both request hashes and treat only a parseable result as a
+review decision.
+
 ## Borrowed Instincts
 
 Solid Snake deliberately inherits a few habits from neighboring reviewers:
