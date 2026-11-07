@@ -164,13 +164,13 @@ peer review lane only when cross-system impact requires it.
    checkout proof. The validator's expected candidate/report scope must match
    the manifest and the packet; do not mix deferred candidates into a fixed
    intake count unless the schema represents their status explicitly.
-   Treat the 7,000-character lane limit as the current measured compatibility
+   Treat the 12,000-character lane limit as the current measured compatibility
    candidate, not a target: reserve documented child-normalization/launcher
    headroom (currently 100 characters) so the emitted packet remains below the
    limit after the receiving checker reconstructs its payload. The historical
-   3,500-character value and the intermediate 4,000-character candidate remain
-   explicit rollback baselines until the 7,000-character compatibility gate is
-   empty-boat green.
+   3,500-character value, intermediate 4,000-character candidate, and prior
+   7,000-character compatibility ceiling remain explicit rollback baselines
+   until the 12,000-character compatibility gate is empty-boat green.
    The compact evidence-index packet itself must include a full 64-character
    `entry_sha256_full` and `entry_sha256_full_len=64` for every listed entry,
    plus full 64-character artifact digests in the compact evidence text when applicable, using an unambiguous
