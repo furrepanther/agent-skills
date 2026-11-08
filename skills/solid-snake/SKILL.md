@@ -77,6 +77,18 @@ Local-router safety limits:
 
 If packet construction fails, wedges the router, exceeds context, or forces excessive truncation, update this skill with the concrete failure mode and the corrected packet pattern before retrying. This is part of the agent contract, not housekeeping.
 
+### Packet-size preflight
+
+Before sending a local-router request, measure the serialized JSON packet.  Do
+not send a packet above 12 KiB.  A November 2026 startup-pin review reached
+30 KiB by embedding a full multi-file diff and release manifests; it was
+withheld rather than risking context truncation.  For a retry, target 9 KiB or
+less: include the exact changed function and call-order excerpt, the live
+contract/config value, the directly relevant regression test, and hashes plus
+absolute paths for the complete diff and manifests.  Do not embed whole
+manifests or unrelated changed files.  Preserve the first packet's path and
+hash, then make at most one compact retry with the same review question.
+
 ### Schema-truncation recovery
 
 When a schema-bearing reviewer response is truncated and therefore cannot be
