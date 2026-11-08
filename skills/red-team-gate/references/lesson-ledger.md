@@ -247,3 +247,16 @@ new_lessons: already_reflected
 resolution: corrective review is clean; two temporary evidence deletion requests were queued and remain an operational cleanup follow-up, not a review blocker
 skill_revision_digest: `154a36e9e3d4d4f65fd071601d90501afa99fd538a9c2ee68ab0f6d4117eb17f`
 review_result: `/tmp/primus-review/logger-path-selection-20261024-final/r15-v2-raw/grumpy_final.result.json`
+
+## Execution 16 (MemFab semantic-outage classification review)
+
+status: closed
+counted: false
+historical_ordinal: 16 (descriptive only; prior lesson-capture target completed)
+review_record: Memory Fabric sm-422a6413-4db9-45a4-a4f0-dfa3bc940012
+scope: healthy-core semantic-capacity classification, bounded 8 KiB stdout-tail parsing, compact terminal attestation, no-repair/no-peer-outage proof, and local six-lane plus Grumpy review
+preflight: focused suite 47 passed plus 1 subtest; the exact real-checker regression injects 12,000 bytes of raw health padding and asserts stdout exceeds the tail, tail equals the cap, semantic degradation, no repair, no peer alert, and temporary cleanup
+lessons_checked: compact packet fields, full digests, named test evidence, fail-closed terminal contract, and local-only review
+post_run_disposition: first compact packet blocked because assertion-level oversized-tail proof was only named, not described; corrected packet and fresh full gate returned no blocking defect
+new_lessons: transferred_to_skill
+resolution: require compact TESTS evidence to state the controlling input/boundary and asserted observable result for each nontrivial acceptance criterion; a test name alone is insufficient

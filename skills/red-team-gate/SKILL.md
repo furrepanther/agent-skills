@@ -89,6 +89,11 @@ constraint, or a limit on an unrelated promotion gate.
   `provenance_verified=true` and `complete_packet=true`. A reviewer result that
   says the packet is empty or incomplete is an evidence-transport failure, not
   a substantive code finding and not a pass.
+- For each nontrivial acceptance criterion, the compact TESTS evidence must
+  name the test or locus plus its controlled boundary/input and the asserted
+  observable outcome. A bare passing command or test name is not proof that the
+  criterion was exercised. If that assertion-level proof cannot fit, use the
+  existing verified pointer-backed evidence path rather than omitting it.
 - Automatic supplemental lane selection is additive. With no explicit lane
   subset, all enabled mandatory SDLC lanes must run; auto-selected lanes must
   never replace that default set. With an explicit subset, only that subset
