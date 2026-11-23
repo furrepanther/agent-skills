@@ -78,6 +78,31 @@ constraint, or a limit on an unrelated promotion gate.
 
 ### Canonical packet and lane-coverage contract
 
+#### Full-gate composition
+
+A full Red-Team Gate is one integrated decision, not a collection of optional
+review labels. It requires, in order:
+
+1. a typed, source-complete evidence packet with verified provenance;
+2. every enabled mandatory SDLC lane;
+3. a mandatory Solid Snake adversarial pass for hidden paths, stale-state or
+   race failures, bypassable guards, partial failure, recovery, and drift;
+4. Grumpy as the final adversarial stopper over the consolidated evidence;
+5. local-router route proof, deterministic negative-path proof, and independent
+   live-recovery proof when the change affects transport, retry, health, or
+   false-success behavior; and
+6. runtime, cleanup, and evidence-pointer verification where applicable.
+
+The Solid Snake report is a required typed evidence artifact: it must state its
+scope, reviewed loci, findings or explicitly empty finding set, residual risks,
+and disposition. It is neither an alternate identity nor an optional SDLC lane,
+and it cannot be replaced by a prose claim that the code was reviewed.
+
+A focused SDLC, Solid Snake, or Grumpy pass may aid diagnosis, but is not a
+full gate and cannot produce an `empty_boat` or promotion decision. A full gate
+fails closed if any required component is absent, malformed, stale relative to
+the reviewed source, or contradictory.
+
 - The review wrapper consumes the typed top-level fields `TASK`,
   `ACCEPTANCE_CRITERIA`, `DIFF_OR_FILES`, `TESTS`, `KNOWN_CONSTRAINTS`,
   `OUT_OF_SCOPE`, and `PROVENANCE`. Friendly aliases such as
