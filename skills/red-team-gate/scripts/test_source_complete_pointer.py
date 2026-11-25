@@ -482,6 +482,87 @@ def main() -> int:
     )
     assert route_packet["GATE_EXECUTION_EVIDENCE"]["prior_lane_count"] == 20
     assert "prior_lane_route_receipts" not in route_packet["GATE_EXECUTION_EVIDENCE"]
+    assert "current_lane_receipt_attached_after_response" not in route_packet[
+        "GATE_EXECUTION_EVIDENCE"
+    ]
+
+    # The all-files primary lane is the tightest pointer-backed handoff: every
+    # changed path retains a real sample and full digest while the complete
+    # packet remains recoverable through the verified pointer. Keep this
+    # near-ceiling case below the canonical 12K child-review bound.
+    full_scope_artifacts = []
+    for index in range(17):
+        path = f"repo/file_{index}.py"
+        content = f"# source file {index}\nreturn {index}\n"
+        full_scope_artifacts.append(
+            {
+                "path": path,
+                "content": content,
+                "file_sha256_full": module._source_content_sha256(content, path),
+                "size_bytes": len(content.encode("utf-8")),
+            }
+        )
+    full_scope_packet = {
+        "TASK": "pointer-backed all-file lane budget",
+        "ACCEPTANCE_CRITERIA": [
+            {"criterion_id": "AC-001", "text": "source bytes are verified"},
+        ],
+        "DIFF_OR_FILES": [item["path"] for item in full_scope_artifacts],
+        "TESTS": ["T-001 criterion=AC-001 assertion=source receipt passes; observed=pass"],
+        "EVIDENCE": [],
+        "KNOWN_CONSTRAINTS": ["local-only"],
+        "OUT_OF_SCOPE": ["deployment"],
+        "PROVENANCE": {
+            "repo_or_scope": "pointer-budget-regression",
+            "base_revision": "base-1",
+            "provenance_verified": True,
+            "complete_packet": True,
+            "full_artifacts_transport": {
+                "transport": "pointer_backed_complete_bytes",
+                "complete_bytes_stored": True,
+                "inline_bytes_in_lane": False,
+                "artifact_refs": [item["path"] for item in full_scope_artifacts],
+                "file_sha256_full": [item["file_sha256_full"] for item in full_scope_artifacts],
+            },
+            "temporary_evidence_pointer": {
+                "memory_id": "pointer-budget-regression",
+                "record_kind": "temporary_review_evidence",
+                "verified": True,
+                "canonical": False,
+                "retention_verified": True,
+                "content_sha256": "c" * 64,
+                "source_packet_sha256": "p" * 64,
+                "packet_sha256": "p" * 64,
+                "purge_after_utc": "2099-01-01T00:00:00Z",
+                "storage_format": module.TEMP_EVIDENCE_CHUNK_MANIFEST_SCHEMA,
+                "chunk_count": 2,
+                "manifest_content_sha256": "m" * 64,
+            },
+        },
+        "FULL_ARTIFACTS": full_scope_artifacts,
+    }
+    full_scope_pages = module._source_review_pages_from_artifacts(full_scope_artifacts)
+    full_scope_samples, full_scope_samples_sha256 = module._source_file_samples_from_artifacts(
+        full_scope_artifacts
+    )
+    full_scope_packet["SOURCE_PAGES"] = full_scope_pages[:1]
+    full_scope_packet = module._attach_source_review_page(
+        full_scope_packet,
+        pointer=full_scope_packet["PROVENANCE"]["temporary_evidence_pointer"],
+        source_page=full_scope_pages[0],
+        source_samples=full_scope_samples,
+        source_samples_sha256=full_scope_samples_sha256,
+        lane_id="qwen3_primary_adversarial_checker",
+    )
+    full_scope_compacted = module.compact_single_lane_packet(
+        full_scope_packet,
+        12_000,
+        source_page=full_scope_pages[0],
+        source_samples=full_scope_samples,
+        source_samples_sha256=full_scope_samples_sha256,
+        lane_id="qwen3_primary_adversarial_checker",
+    )
+    assert module.checker_user_content_chars(full_scope_compacted) <= 12_000
 
     snapshot = module.snapshot_authoritative_grumpy_packet(result)
     assert "SOURCE_ARTIFACTS" not in snapshot

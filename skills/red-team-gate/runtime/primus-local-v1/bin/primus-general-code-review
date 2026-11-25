@@ -1654,6 +1654,20 @@ def _attach_source_review_page(
         "file_sha256_full_order": "SOURCE_FILE_SAMPLES.path_order",
         "lane_id": lane_id,
     }
+    if len(page_receipts) > 1:
+        # The per-page receipt rows are authoritative for a multi-page
+        # handoff. Do not duplicate the first-page selector fields, which can
+        # both mislead a consumer into treating page one as the whole handoff
+        # and consume the near-ceiling lane budget.
+        for field in (
+            "page_index",
+            "page_count",
+            "page_sha256_full",
+            "path",
+            "byte_start",
+            "byte_end",
+        ):
+            candidate["SOURCE_DELIVERY"].pop(field, None)
     return candidate
 
 
@@ -1675,7 +1689,6 @@ def _attach_gate_execution_evidence(
         # not copy them into every later SDLC request: that creates an
         # unbounded packet-growth race as lanes complete successfully.
         "prior_lane_count": len(prior_route_receipts),
-        "current_lane_receipt_attached_after_response": True,
     }
     return candidate
 
@@ -4436,6 +4449,12 @@ def compact_single_lane_packet(
         prior_route_receipts=prior_route_receipts or [],
     )
     packet, _, _ = checker_normalized_packet(prepared)
+    # The checker normalizes omitted optional ledgers to an empty string for
+    # envelope stability.  EVIDENCE is a typed ledger at the compaction
+    # boundary, so normalize that empty default to an empty list before the
+    # ledger compactor rejects it as malformed input.
+    if packet.get("EVIDENCE") in ("", None):
+        packet["EVIDENCE"] = []
     # Producer-side findings are already represented by the typed acceptance
     # criteria, evidence ledger, and tests. They are optional packet metadata,
     # and carrying them unchanged into every lane consumes context needed for
