@@ -169,6 +169,30 @@ def main() -> int:
     assert provenance["full_artifacts_transport"]["transport"] == "pointer_backed_complete_bytes"
     assert provenance["temporary_evidence_pointer"]["memory_id"] == pointer["memory_id"]
 
+    compact_pointer = module.compact_packet_section_for_key(
+        "PROVENANCE",
+        {
+            **provenance,
+            "temporary_evidence_pointer": {
+                **provenance["temporary_evidence_pointer"],
+                "record_kind": "temporary_review_evidence",
+                "canonical": False,
+                "storage_format": module.TEMP_EVIDENCE_CHUNK_MANIFEST_SCHEMA,
+                "chunk_count": 3,
+                "manifest_content_sha256": "m" * 64,
+                "packet_sha256": "b" * 64,
+                "source_packet_sha256_scope": "temporary_memory_record",
+                "packet_sha256_scope": "temporary_memory_record",
+                "purge_after_utc": "2099-01-01T00:00:00Z",
+            },
+        },
+        850,
+    )
+    compact_pointer_fields = compact_pointer["temporary_evidence_pointer"]
+    assert compact_pointer_fields["storage_format"] == module.TEMP_EVIDENCE_CHUNK_MANIFEST_SCHEMA
+    assert compact_pointer_fields["chunk_count"] == 3
+    assert compact_pointer_fields["manifest_content_sha256"] == "m" * 64
+
     pages = module._source_review_pages_from_artifacts(result["FULL_ARTIFACTS"])
     assert len(pages) > 1
     samples, samples_sha256 = module._source_file_samples_from_artifacts(result["FULL_ARTIFACTS"])

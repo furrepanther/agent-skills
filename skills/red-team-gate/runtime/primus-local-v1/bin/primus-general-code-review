@@ -1950,13 +1950,20 @@ def compact_packet_section_for_key(key: str, value: Any, max_chars: int) -> Any:
                     field: pointer[field]
                     for field in (
                         "memory_id",
+                        "record_kind",
                         "verified",
+                        "canonical",
                         "retention_verified",
                         "content_sha256",
+                        "packet_sha256",
                         "source_packet_sha256",
                         "source_packet_sha256_scope",
+                        "packet_sha256_scope",
+                        "review_packet_hash",
                         "purge_after_utc",
                         "storage_format",
+                        "chunk_count",
+                        "manifest_content_sha256",
                     )
                     if field in pointer
                 }
