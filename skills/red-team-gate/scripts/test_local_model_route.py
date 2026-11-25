@@ -105,6 +105,46 @@ def main() -> int:
         request_thread_alive=True,
     )
 
+    # A disconnected client whose lease remains unreleased is a router
+    # reconciliation defect, not a slow connected generation.  The gate must
+    # fail the waiting lane with evidence after repeated identical state and
+    # must never kill the router or backend.
+    stalled_lease = {
+        "health_ok": True,
+        "queue_ok": True,
+        "active_global": 4,
+        "active_user": 4,
+        "resident_slots": 4,
+        "user_max_in_flight": 4,
+        "queued_global": 0,
+        "queued_user": 0,
+        "unreleased_disconnected_leases": 2,
+        "worker_busy": 1,
+        "slot_busy": 1,
+        "requests_processing": 1,
+        "total_admitted": 756,
+        "total_released": 752,
+        "prompt_tokens_total": 2091590,
+        "tokens_predicted_total": 675416,
+        "n_decode_total": 176617,
+        "slot_progress": [
+            {
+                "id": 0,
+                "id_task": 268348,
+                "is_processing": True,
+                "n_prompt_tokens_processed": 6653,
+                "n_decoded": 0,
+            }
+        ],
+    }
+    assert checker._capacity_disconnected_lease_stall_confirmed(
+        [dict(stalled_lease) for _ in range(checker.CAPACITY_DISCONNECTED_LEASE_STALL_PROBES)]
+    )
+    connected_slow = dict(stalled_lease, unreleased_disconnected_leases=0)
+    assert not checker._capacity_disconnected_lease_stall_confirmed(
+        [dict(connected_slow) for _ in range(checker.CAPACITY_DISCONNECTED_LEASE_STALL_PROBES)]
+    )
+
     assert_rejects_model_override(
         BIN / "primus-adversarial-code-checker",
         ["--input", "/dev/null"],

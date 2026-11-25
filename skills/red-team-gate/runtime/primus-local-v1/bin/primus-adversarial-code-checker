@@ -75,6 +75,12 @@ CAPACITY_QUEUE_MISSING_PROBES = 3
 # request was actually observed active and all router activity then disappears;
 # an unchanged live slot is slow work, not a hang.
 CAPACITY_LEDGER_INCONSISTENCY_PROBES = 3
+# A disconnected client can leave a router lease held while its backend
+# generation remains unreconciled.  This is not a slow model response: the
+# router explicitly reports the client gone and the lease unreleased.  Require
+# repeated identical evidence before failing the waiting review lane, and
+# never terminate the router or the backend from this process.
+CAPACITY_DISCONNECTED_LEASE_STALL_PROBES = 3
 
 # The normalizer fills omitted reviewer fields with a sentinel so the result
 # remains schema-valid. A no-block decision must not treat that sentinel as
@@ -616,6 +622,19 @@ def collect_review_evidence(router_base_url: str) -> dict[str, Any]:
 
     queue_payload = queue_probe.get("payload") if isinstance(queue_probe.get("payload"), dict) else {}
     state = queue_payload.get("state") if isinstance(queue_payload.get("state"), dict) else {}
+    lease_diagnostics = (
+        queue_payload.get("lease_diagnostics")
+        if isinstance(queue_payload.get("lease_diagnostics"), dict)
+        else {}
+    )
+    leases = lease_diagnostics.get("leases") if isinstance(lease_diagnostics.get("leases"), list) else []
+    unreleased_disconnected_leases = sum(
+        1
+        for lease in leases
+        if isinstance(lease, dict)
+        and lease.get("client_disconnected") is True
+        and lease.get("released") is not True
+    )
     worker_slots = queue_payload.get("worker_slots") if isinstance(queue_payload.get("worker_slots"), dict) else {}
     limits = queue_payload.get("limits") if isinstance(queue_payload.get("limits"), dict) else {}
     slots_payload = slots_probe.get("payload") if isinstance(slots_probe.get("payload"), list) else []
@@ -633,6 +652,7 @@ def collect_review_evidence(router_base_url: str) -> dict[str, Any]:
         "active_global": _safe_int(state.get("active_global")),
         "active_user": _safe_int(state.get("active_user")),
         "active_background": _safe_int(state.get("active_background")),
+        "unreleased_disconnected_leases": unreleased_disconnected_leases,
         "queued_global": _safe_int(state.get("queued_global")),
         "queued_user": _safe_int(state.get("queued_user")),
         "queued_background": _safe_int(state.get("queued_background")),
@@ -761,6 +781,38 @@ def _capacity_wait_signature(evidence: dict[str, Any]) -> tuple[Any, ...]:
         _safe_int(evidence.get("user_max_in_flight")),
         _safe_int(evidence.get("queued_global")),
         _safe_int(evidence.get("queued_user")),
+        _safe_int(evidence.get("unreleased_disconnected_leases")),
+    )
+
+
+def _capacity_disconnected_lease_stall_confirmed(
+    observations: list[dict[str, Any]],
+) -> bool:
+    """Detect a repeated unreleased-client lease without killing live work.
+
+    This is deliberately state-based.  A slow but connected generation does
+    not match it, and a clock threshold alone can never trigger it.  The
+    router must explicitly report disconnected unreleased leases, full
+    admission capacity, no queued work, and no measurable counter or slot
+    progress across the required observations.
+    """
+    if len(observations) < CAPACITY_DISCONNECTED_LEASE_STALL_PROBES:
+        return False
+    recent = observations[-CAPACITY_DISCONNECTED_LEASE_STALL_PROBES:]
+    if not all(
+        bool(item.get("health_ok"))
+        and bool(item.get("queue_ok"))
+        and _safe_int(item.get("unreleased_disconnected_leases")) > 0
+        and _safe_int(item.get("active_global")) >= _safe_int(item.get("resident_slots")) > 0
+        and _safe_int(item.get("active_user")) >= _safe_int(item.get("user_max_in_flight")) > 0
+        and _safe_int(item.get("queued_global")) == 0
+        and _safe_int(item.get("queued_user")) == 0
+        for item in recent
+    ):
+        return False
+    return not any(
+        _evidence_progressed(previous, current)
+        for previous, current in zip(recent, recent[1:])
     )
 
 
@@ -839,7 +891,8 @@ def wait_for_local_capacity(router_base_url: str, evidence_poll_s: float) -> dic
                 f"queue={int(bool(current.get('queue_ok')))} "
                 f"active={_safe_int(current.get('active_global'))}/{_safe_int(current.get('resident_slots'))} "
                 f"user={_safe_int(current.get('active_user'))}/{_safe_int(current.get('user_max_in_flight'))} "
-                f"queued={_safe_int(current.get('queued_global'))}/{_safe_int(current.get('queued_user'))}",
+                f"queued={_safe_int(current.get('queued_global'))}/{_safe_int(current.get('queued_user'))} "
+                f"disconnected_unreleased={_safe_int(current.get('unreleased_disconnected_leases'))}",
                 file=sys.stderr,
             )
             previous_signature = signature
@@ -874,6 +927,19 @@ def wait_for_local_capacity(router_base_url: str, evidence_poll_s: float) -> dic
                     )
             else:
                 inconsistent_ledger_probes = 0
+            if _capacity_disconnected_lease_stall_confirmed(observations):
+                raise ReviewEvidenceFailure(
+                    "capacity_disconnected_lease_stall",
+                    {
+                        "observations": observations,
+                        "capacity_required": True,
+                        "explanation": (
+                            "router reports disconnected but unreleased leases holding full capacity "
+                            "without measurable counter or worker-slot progress; no router or backend "
+                            "termination is attempted"
+                        ),
+                    },
+                )
             if _local_capacity_available(current):
                 return current
         time.sleep(evidence_poll_s)
