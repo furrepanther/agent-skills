@@ -89,6 +89,13 @@ absolute paths for the complete diff and manifests.  Do not embed whole
 manifests or unrelated changed files.  Preserve the first packet's path and
 hash, then make at most one compact retry with the same review question.
 
+Concrete packet-construction failure to avoid: on 2026-11-24 a bridge review
+packet builder selected several overlapping source windows and serialized
+21,423 bytes before the router call.  The size guard correctly withheld it.
+Use one short window per disputed invariant, deduplicate overlapping excerpts,
+and keep the full-source paths and hashes as references; fail before transport
+when the serialized packet exceeds 12 KiB.
+
 ### Schema-truncation recovery
 
 When a schema-bearing reviewer response is truncated and therefore cannot be

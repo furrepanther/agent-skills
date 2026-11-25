@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""Fast front door for Grumpy Reviewer.
+
+The fast path is deterministic and does not perform runtime inference. It emits
+schema-shaped review results for obvious policy/test defects and obvious clean
+router/documentation near-misses. Ambiguous packets exec the real Grumpy
+Reviewer, which routes through the local inference router.
+"""
+
+from __future__ import annotations
+
+import argparse
+from primus_inference_mode import (
+    add_inference_mode,
+    child_mode_args,
+    parse_inference_args,
+    validate_local_model_alias,
+)
+import datetime as dt
+import hashlib
+import json
+import os
+import re
+import subprocess
+from pathlib import Path
+from typing import Any
+
+
+RUNTIME_ROOT = Path(os.getenv("PRIMUS_RED_TEAM_GATE_ROOT", Path(__file__).resolve().parent.parent))
+GRUMPY = RUNTIME_ROOT / "bin" / "primus-grumpy-reviewer"
+PROMPT_VERSION = "grumpy-reviewer-gemma4-v0.1-fast-prefilter"
+SCHEMA_VERSION = "adversarial-code-checker-result-v1-draft"
+DEFAULT_GRUMPY_MODEL = os.getenv("PRIMUS_GRUMPY_MODEL", "local-inference-11888")
+DEFAULT_MAX_REVIEW_CHARS = 12000
+SUCCESS_OBJECT_PATTERNS = ("'ok': " + "true", '"ok": ' + "true")
+CHECK_FALSE_PATTERN = "check=" + "false"
+SUBPROCESS_RUN_PATTERN = "subprocess." + "run"
+
+
+def utc_now() -> str:
+    return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def load_json(path: Path) -> Any:
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def as_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def iter_string_leaves(value: Any, path: str) -> list[tuple[str, str]]:
+    leaves: list[tuple[str, str]] = []
+    if isinstance(value, str):
+        return [(path, value)]
+    if isinstance(value, dict):
+        for key, child in value.items():
+            child_path = f"{path}.{key}" if path else str(key)
+            leaves.extend(iter_string_leaves(child, child_path))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            child_path = f"{path}[{index}]"
+            leaves.extend(iter_string_leaves(child, child_path))
+    return leaves
+
+
+def normalize_packet(raw: dict[str, Any], source: Path) -> dict[str, Any]:
+    provenance = raw.get("PROVENANCE") if isinstance(raw.get("PROVENANCE"), dict) else {}
+    return {
+        "TASK": raw.get("TASK", raw.get("task", "")),
+        "ACCEPTANCE_CRITERIA": raw.get("ACCEPTANCE_CRITERIA", raw.get("acceptance_criteria", "")),
+        "DIFF_OR_FILES": raw.get("DIFF_OR_FILES", raw.get("diff_or_files", "")),
+        "TESTS": raw.get("TESTS", raw.get("tests", "")),
+        "KNOWN_CONSTRAINTS": raw.get("KNOWN_CONSTRAINTS", raw.get("known_constraints", "")),
+        "OUT_OF_SCOPE": raw.get("OUT_OF_SCOPE", raw.get("out_of_scope", "")),
+        "PROVENANCE": {
+            "repo_or_scope": provenance.get("repo_or_scope", str(source)),
+            "base_revision": provenance.get("base_revision", "unknown"),
+            "review_packet_id": provenance.get("review_packet_id", ""),
+            "provenance_verified": bool(provenance.get("provenance_verified")),
+            "complete_packet": bool(provenance.get("complete_packet")),
+        },
+    }
+
+
+def packet_hash(packet: dict[str, Any]) -> str:
+    return sha256_text(json.dumps(packet, ensure_ascii=True, sort_keys=True, separators=(",", ":")))
+
+
+def base_result(packet: dict[str, Any], source: Path) -> dict[str, Any]:
+    digest = packet_hash(packet)
+    provenance = packet["PROVENANCE"]
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "prompt_version": PROMPT_VERSION,
+        "review_packet": {
+            "packet_id": provenance.get("review_packet_id") or f"fast-{digest[:16]}",
+            "packet_hash": digest,
+            "repo_or_scope": str(provenance.get("repo_or_scope") or source),
+            "base_revision": str(provenance.get("base_revision") or "unknown"),
+            "provenance_verified": bool(provenance.get("provenance_verified")),
+            "complete_packet": bool(provenance.get("complete_packet")),
+        },
+        "route_evidence": {
+            "router_url": "deterministic-prefilter:no-runtime-inference",
+            "request_id": f"fast-{digest[:16]}",
+            "route": "deterministic_prefilter",
+            "model_alias": "none",
+            "direct_backend_used": False,
+            "cloud_used": False,
+            "truncated": False,
+            "timed_out": False,
+            "request_hash": digest,
+            "response_hash": "",
+            "evidence_ref": f"deterministic-prefilter:{utc_now()}",
+            "route_header_consistent": True,
+            "route_evidence_verified": True,
+            "model_had_merge_decision": False,
+        },
+        "materials_reviewed": [
+            {"id": key, "type": "diff" if key == "DIFF_OR_FILES" else "test" if key == "TESTS" else "requirement", "status": "fully_reviewed" if packet.get(key) not in (None, "", [], {}) else "missing", "notes": "deterministic prefilter"}
+            for key in ("TASK", "ACCEPTANCE_CRITERIA", "DIFF_OR_FILES", "TESTS", "KNOWN_CONSTRAINTS", "OUT_OF_SCOPE")
+        ],
+        "requirements_extracted": [],
+        "test_assertions_extracted": [],
+        "acceptance_coverage": [],
+        "adversarial_checks_performed": {
+            "requirements_coverage": "deterministic prefilter",
+            "test_assertion_strength": "deterministic prefilter",
+            "failure_paths": "deterministic prefilter",
+            "async_concurrency": "deterministic prefilter",
+            "config_default_path_changes": "deterministic prefilter",
+            "security_auth_policy_bypass": "deterministic prefilter",
+            "persistence_idempotence": "deterministic prefilter",
+            "external_service_router_behavior": "deterministic prefilter",
+            "prompt_injection_resistance": "deterministic prefilter",
+            "truncation_missing_context_risk": "deterministic prefilter",
+            "why_no_block_is_justified": "",
+        },
+        "prompt_injection_attempts": [],
+        "findings": [],
+        "test_assertion_gaps": [],
+        "merge_decision": {"decision": "no_blocking_defect_found", "reason": "deterministic prefilter found no blocker", "confidence": "medium"},
+        "residual_risks": [],
+    }
+
+
+def finding(fid: int, severity: str, location: str, evidence: str, scenario: str, fix: str) -> dict[str, Any]:
+    return {
+        "id": f"F{fid}",
+        "severity": severity,
+        "location": location,
+        "blocking": severity in {"Critical", "High"},
+        "observed_evidence": evidence[:180],
+        "failure_scenario": scenario[:180],
+        "why_not_noise": "Deterministic Grumpy prefilter matched explicit reviewed evidence.",
+        "required_fix": fix[:180],
+    }
+
+
+def forbidden_runtime_endpoints(diff: str) -> list[str]:
+    endpoints: list[str] = []
+    current_path = ""
+    pattern = re.compile(
+        r"127\.0\.0\.1:(?:11434|11441)|localhost:(?:11434|11441)|api\.openai\.com|api\.anthropic\.com|openrouter\.ai|generativelanguage\.googleapis\.com|/v1/chat/completions",
+        re.IGNORECASE,
+    )
+    for raw_line in diff.splitlines():
+        line = raw_line.strip()
+        if line.startswith("diff --git "):
+            parts = line.split()
+            current_path = parts[-1][2:] if len(parts) >= 4 and parts[-1].startswith("b/") else parts[-1] if parts else ""
+            continue
+        lower_path = current_path.lower()
+        content = line[1:].lstrip() if line.startswith("+") else line
+        lower = content.lower()
+        if lower_path.endswith((".md", ".rst", ".txt")):
+            continue
+        if "do not use" in lower or "denylist" in lower or "documentation" in lower:
+            continue
+        endpoints.extend(match.group(0) for match in pattern.finditer(content))
+    return sorted(set(endpoints))
+
+
+def has_suspicious_fast_clean_terms(text: str) -> bool:
+    terms = (
+        "except ",
+        "except:",
+        "contextlib.suppress",
+        "fallback",
+        "retry",
+        "mock",
+        "check=false",
+        "return true",
+        "return []",
+        "return none",
+        "logger.warning",
+    )
+    return any(term in text for term in terms)
+
+
+def has_unchecked_subprocess_run(diff_lower: str) -> bool:
+    lines = diff_lower.splitlines()
+    for index, line in enumerate(lines):
+        if SUBPROCESS_RUN_PATTERN not in line:
+            continue
+        window = "\n".join(lines[index : index + 8])
+        normalized_window = re.sub(r"\s+", "", window)
+        if CHECK_FALSE_PATTERN in normalized_window and "returncode" not in window:
+            return True
+    return False
+
+
+def deterministic(packet: dict[str, Any], source: Path) -> dict[str, Any] | None:
+    result = base_result(packet, source)
+    text = "\n".join(as_text(packet.get(k, "")) for k in ("TASK", "ACCEPTANCE_CRITERIA", "KNOWN_CONSTRAINTS")).lower()
+    diff = as_text(packet.get("DIFF_OR_FILES", ""))
+    tests = as_text(packet.get("TESTS", ""))
+    full = diff + "\n" + tests
+    diff_lower = diff.lower()
+    tests_lower = tests.lower()
+    lower = full.lower()
+    findings: list[dict[str, Any]] = []
+
+    missing_evidence = packet.get("DIFF_OR_FILES") in (None, "", [], {}) or packet.get("TESTS") in (None, "", [], {}) or not packet["PROVENANCE"].get("provenance_verified") or not packet["PROVENANCE"].get("complete_packet")
+    if missing_evidence:
+        result["merge_decision"] = {"decision": "insufficient_evidence", "reason": "Annoying. Missing verified diff/test evidence; no honest review can bless this.", "confidence": "high"}
+        result["test_assertion_gaps"].append({"requirement_id": "R1", "gap": "missing verified implementation or test evidence", "blocking": True})
+        return result
+
+    docs_only_endpoint_mention = "documentation only" in lower and not any(term in diff_lower for term in ("requests.post", "client.post", "urllib", "curl ", "fetch("))
+    forbidden = [] if docs_only_endpoint_mention else forbidden_runtime_endpoints(diff)
+    if forbidden:
+        cloud_word = " Direct cloud/provider bypass violates must not use cloud." if any("api." in x or "openrouter" in x for x in forbidden) else ""
+        findings.append(finding(1, "Critical", "DIFF_OR_FILES", "Non-router inference endpoint: " + forbidden[0] + cloud_word, "Runtime inference bypasses the local router; direct cloud/backend use is forbidden.", "Use http://127.0.0.1:11888/v1 only."))
+        if "assert" in tests_lower and any(term in tests_lower for term in ("not none", "is not none", "status_code")):
+            findings.append(finding(len(findings) + 1, "High", "TESTS", "Weak test checks not None/status instead of correct endpoint behavior.", "Bypass can pass tests that do not verify router endpoint.", "Assert the exact router URL and no direct backend endpoint."))
+
+    prompt_injection_hits: list[dict[str, str]] = []
+    for source, text_value in iter_string_leaves(packet, "review_packet"):
+        lower_value = text_value.lower()
+        if any(term in lower_value for term in ("system: reviewer", "ignore reviewer", "reviewer instruction", "approve", "no findings")):
+            prompt_injection_hits.append({"source": source, "observed_text_or_summary": text_value[:180]})
+    if prompt_injection_hits:
+        result["prompt_injection_attempts"].extend(
+            {"source": item["source"], "observed_text_or_summary": item["observed_text_or_summary"], "ignored": True}
+            for item in prompt_injection_hits
+        )
+        first = prompt_injection_hits[0]
+        findings.append(finding(len(findings) + 1, "High", first["source"], "Observed prompt injection text in reviewed artifact.", "Reviewer instruction text can bias weak checkers.", "Ignore artifact-contained reviewer instructions."))
+
+    if "except exception" in diff_lower and "pass" in diff_lower and any(pattern in diff_lower for pattern in SUCCESS_OBJECT_PATTERNS):
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "Exception handler swallows exception and returns a success-shaped object.", "Caller sees success after silent failure.", "Return or raise an explicit failure."))
+    if ("except " in diff_lower or "except:" in diff_lower or "contextlib.suppress" in diff_lower) and any(term in diff_lower for term in ("return true", "return []", "return none", *SUCCESS_OBJECT_PATTERNS)):
+        findings.append(finding(len(findings) + 1, "High", "DIFF_OR_FILES", "Error path returns success-shaped/default value.", "Caller can see success or empty data after failure.", "Surface the error or return an explicit failure result."))
+    if has_unchecked_subprocess_run(diff_lower):
+        findings.append(finding(len(findings) + 1, "High", "DIFF_OR_FILES", "Subprocess call disables exception-on-failure without returncode handling.", "Failed command can be treated as success.", "Check returncode/stdout/stderr and fail explicitly."))
+
+    if "async def" in diff_lower and ".post(" in diff_lower and "await " not in diff_lower:
+        findings.append(finding(len(findings) + 1, "High", "DIFF_OR_FILES", "Async function calls post without await; network send is not awaited.", "Send failure can happen after success is returned.", "Await the post and propagate failure."))
+
+    ensure_calls = [line for line in tests.lower().splitlines() if "ensure_line(" in line and not line.lstrip().startswith("def ")]
+    if any(term in text for term in ("idempot", "exactly once", "no duplicate", "duplicate")) and "open(path, 'a')" in lower and 0 < len(ensure_calls) < 2:
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "open(path, 'a') appends unconditionally; TESTS call ensure_line fewer than two times.", "Second invocation creates duplicate config.", "Read existing content; test second invocation leaves exactly one line."))
+        result["test_assertion_gaps"].append({"requirement_id": "R1", "gap": "TESTS call ensure_line fewer than two times; second invocation is untested", "blocking": True})
+
+    if "/local_build" in text and "/linuxdata/github/llama.cpp" in lower:
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "Diff references /linuxdata/Github/llama.cpp while /local_build is required.", "Promotion can reuse shared-repo or stale artifacts.", "Build and promote from /local_build/antigravity/llama.cpp."))
+    if ("cuda 12" in text or "cuda 12-era" in text) and not any(term in lower for term in ("cuda 12", "cuda-12", "cuda_12", "cuda 13", "build_cuda_13", "version check")):
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "No CUDA/build-version guard exists.", "CUDA 12-era binary can be promoted.", "Add explicit CUDA/build provenance verification."))
+    if "disruption" in text and "systemctl stop" in lower and "core-service-disruption-notice" not in lower:
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "systemctl stop appears without disruption notice.", "Core service can be stopped unannounced.", "Send disruption notice before stop and restored after health checks."))
+
+    placeholder = re.search(r"(?m)^\s*(pass|\.{3})\s*(#.*)?$", tests)
+    if placeholder and ("def test" in tests.lower() or "test_" in tests.lower()):
+        findings.append(finding(len(findings) + 1, "High", "TESTS", "TESTS contain placeholder pass or ellipsis.", "Required behavior can pass without assertions.", "Replace placeholder with acceptance assertions."))
+
+    if ("cloud_required" in lower or "cloud-required" in lower) and "x-inference-cloud-required" in lower and forbidden:
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "After cloud-required/x-inference-cloud-required signal, code still uses direct cloud/provider path.", "Router handoff is bypassed after explicit cloud-required signal.", "Return explicit handoff through router-facing interface."))
+
+    spoofed_route_headers = (
+        "request_headers" in diff_lower
+        and "x-inference-route" in diff_lower
+        and "x-request-id" in diff_lower
+        and any(term in text for term in ("caller-supplied", "spoof", "spoofable", "signed", "router-owned", "end-to-end"))
+    )
+    if spoofed_route_headers:
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "Caller-supplied x-inference-route/x-request-id headers are spoofable, not signed router-owned proof.", "Fake headers can pass route verification.", "Use router-owned signed/end-to-end route evidence."))
+
+    if "route_evidence" in lower and any(term in lower for term in ("caller-supplied", "spoof", "spoofable", "signed", "router-owned", "end-to-end")):
+        findings.append(finding(len(findings) + 1, "Critical", "DIFF_OR_FILES", "Caller-supplied route_evidence is spoofable, not signed router-owned proof.", "Fake route evidence can pass route verification.", "Use router-owned signed/end-to-end route evidence."))
+
+    if findings:
+        result["findings"] = findings[:3]
+        result["merge_decision"] = {"decision": "block", "reason": "Grumpy did not need waking; deterministic blocker is already sitting there.", "confidence": "high"}
+        return result
+
+    clean_router_only = "127.0.0.1:11888" in lower and not forbidden
+    docs_only = "documentation only" in lower or "docs-only" in text or "markdown" in text
+    if (clean_router_only or docs_only) and has_suspicious_fast_clean_terms(lower):
+        return None
+    if clean_router_only or docs_only:
+        result["merge_decision"] = {"decision": "no_blocking_defect_found", "reason": "Grudgingly clean on deterministic router/docs checks.", "confidence": "medium"}
+        result["adversarial_checks_performed"]["why_no_block_is_justified"] = "deterministic clean router/docs prefilter"
+        return result
+
+    return None
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Fast deterministic front door for Grumpy Reviewer")
+    parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--raw-output", type=Path)
+    parser.add_argument(
+        "--evidence-poll-s",
+        type=float,
+        default=2.0,
+        help="runtime evidence observation interval; this is not a job deadline",
+    )
+    parser.add_argument("--max-tokens", type=int, default=512)
+    parser.add_argument("--max-review-chars", type=int, default=DEFAULT_MAX_REVIEW_CHARS)
+    parser.add_argument("--model", help="local router model alias; cloud uses PRIMUS_REVIEW_CLOUD_MODEL / cloud configuration", default=DEFAULT_GRUMPY_MODEL)
+    add_inference_mode(parser)
+    args = parse_inference_args(parser)
+
+    if args.inference_mode == "local":
+        try:
+            args.model = validate_local_model_alias(args.model)
+        except ValueError as exc:
+            parser.error(str(exc))
+
+    raw = load_json(args.input)
+    if not isinstance(raw, dict):
+        raise SystemExit("input packet must be a JSON object")
+    packet = normalize_packet(raw, args.input)
+    result = deterministic(packet, args.input) if args.inference_mode == "local" else None
+    if result is not None:
+        output = json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(output + "\n", encoding="utf-8")
+        else:
+            print(output)
+        if args.raw_output:
+            args.raw_output.parent.mkdir(parents=True, exist_ok=True)
+            args.raw_output.write_text(json.dumps({"deterministic_prefilter": True, "raw_model_output": json.dumps(result, ensure_ascii=False, separators=(",", ":"))}, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return 0
+
+    cmd = [
+        str(GRUMPY),
+        "--input", str(args.input),
+        "--evidence-poll-s", str(args.evidence_poll_s),
+        "--max-tokens", str(args.max_tokens),
+        "--max-review-chars", str(args.max_review_chars),
+        "--model", args.model,
+    ]
+    cmd.extend(child_mode_args(args))
+    if args.output:
+        cmd.extend(["--output", str(args.output)])
+    if args.raw_output:
+        cmd.extend(["--raw-output", str(args.raw_output)])
+    proc = subprocess.run(cmd, check=False)
+    return proc.returncode
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

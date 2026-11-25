@@ -1,0 +1,267 @@
+{
+  "schema": "primus-local-red-team-gate-runtime-manifest-v1",
+  "runtime_id": "primus-local-red-team-gate-v1",
+  "assembled_at_utc": "2026-11-25T13:06:57.902204Z",
+  "inference_contract": {
+    "default": "local",
+    "router": "http://127.0.0.1:11888/v1",
+    "direct_backend_calls": false,
+    "cloud_credentials_included": false
+  },
+  "transport_contract": {
+    "control_ssh_port": 22,
+    "filesystem_port": 22022
+  },
+  "source_files": [
+    {
+      "path": "/usr/production/primus-general-code-review",
+      "bytes": 234268,
+      "sha256": "a04c382a57e10ae62f1e1bbc46f30b7ad452794b7ca5f985304e0abdcdecd898"
+    },
+    {
+      "path": "/usr/production/primus-adversarial-code-checker",
+      "bytes": 103678,
+      "sha256": "4aa5aec1f54bc75e0b2c3134e190ba2618dc319f60afe72b381ae84c79a77761"
+    },
+    {
+      "path": "/usr/production/primus-grumpy-reviewer",
+      "bytes": 2718,
+      "sha256": "408697fc77dc8efb90714588e512f64e1e172643e965f3846799f1d3542e3869"
+    },
+    {
+      "path": "/usr/production/primus-grumpy-fast-checker",
+      "bytes": 20197,
+      "sha256": "b6e06a8e373366b4b932a8fecfd97435e810c9963c3686f163170036488ed68c"
+    },
+    {
+      "path": "/usr/production/primus_inference_mode.py",
+      "bytes": 1391,
+      "sha256": "1046f2953a7c7695f03e3d2e047bc62b241dc2b41bd2eb7628b15a01f252aa69"
+    },
+    {
+      "path": "/usr/production/next-tasks/qwen3_checker_agentic_reviewers_v0_1.json",
+      "bytes": 4828,
+      "sha256": "fb05844ea55bfb6c5c1eac6c2a30ae628528cdc4854cc7d5652603a289ec142f"
+    },
+    {
+      "path": "/usr/production/next-tasks/adversarial_code_checker_prompt_v2_draft.md",
+      "bytes": 7733,
+      "sha256": "2db7022104afb88dc1cba7640a0ea5d927c4d2b5669b6d988893b02902fc9309"
+    },
+    {
+      "path": "/usr/production/next-tasks/adversarial_code_checker_result_schema_v1_draft.json",
+      "bytes": 12135,
+      "sha256": "0f34076598488046757a2e41c646fc75db77d5e44f7b90056e2dd767c8d992b7"
+    },
+    {
+      "path": "/usr/production/next-tasks/grumpy_compact_response_schema_v1.json",
+      "bytes": 4625,
+      "sha256": "350b884a813809f1443927fe8ae6793ee70997cae9fe769659fb9320f2c152ac"
+    },
+    {
+      "path": "/usr/production/next-tasks/inline_code_documenter_prompt_v0_1.md",
+      "bytes": 1298,
+      "sha256": "4edf11dbddc47b8ea42e94ee5a069b0d57f125e90921cd9882b4bd11e4abf949"
+    },
+    {
+      "path": "/usr/production/next-tasks/inline_code_documenter_result_schema_v0_1.json",
+      "bytes": 1111,
+      "sha256": "f225203fc12c8b4a64d856b88e35def7fb1b2b0c3fb99ff6ca777d5320e46840"
+    },
+    {
+      "path": "/usr/production/next-tasks/adversarial_code_checker_compact_retry_prompt_v1.md",
+      "bytes": 1488,
+      "sha256": "203198446291e122932659b5e8892cb7a22dc13ec30b53a9742c4ac5f7860fe2"
+    },
+    {
+      "path": "/usr/production/next-tasks/adversarial_code_checker_compact_retry_schema_v1.json",
+      "bytes": 1748,
+      "sha256": "0c11b1295523dc13eb24e92dab39ae0e9ef11a766ceae5eb7286311fb339b61b"
+    },
+    {
+      "path": "/usr/production/next-tasks/grumpy_reviewer_compact_prompt_v1.md",
+      "bytes": 2608,
+      "sha256": "39c9c484be9af5dbd857ed67fbae8a41b12c59ee922b50e5401df004fdc3d160"
+    },
+    {
+      "path": "/usr/production/next-tasks/grumpy_reviewer_gemma4_prompt_v0_1.md",
+      "bytes": 6889,
+      "sha256": "0961b8649c5480806ece49a4b1691c788e636abd2c1ffa2f3d87a302a72d9ac7"
+    },
+    {
+      "path": "/linuxdata/Github/claude-plugins-official/plugins/pr-review-toolkit/agents/code-reviewer.md",
+      "bytes": 4032,
+      "sha256": "3b8a366b76825a27c5576111998b91fc372a659498997fe6d994a2d90a648651"
+    },
+    {
+      "path": "/linuxdata/Github/claude-plugins-official/plugins/pr-review-toolkit/agents/silent-failure-hunter.md",
+      "bytes": 7937,
+      "sha256": "d00d9e9f69c3a309f8d786070e39cc10a88b2e9ae02c031bc7a89cb7eae7a0ca"
+    },
+    {
+      "path": "/linuxdata/Github/claude-plugins-official/plugins/pr-review-toolkit/agents/pr-test-analyzer.md",
+      "bytes": 5054,
+      "sha256": "fab33512554b37602495a276cc56ff54c92ac1dceed2ce1ce597a5bbcf7dc940"
+    },
+    {
+      "path": "/linuxdata/Github/wshobson-agents/plugins/agent-teams/agents/team-reviewer.md",
+      "bytes": 3413,
+      "sha256": "cb0061e9e678ee4a9d26865e6d82b5c280ff98557a8e86f1535ed18aefa12c84"
+    },
+    {
+      "path": "/linuxdata/Github/superpowers/skills/subagent-driven-development/code-quality-reviewer-prompt.md",
+      "bytes": 1080,
+      "sha256": "2eeb3bf63fccfbee042812dc94e7032048603f0f8c3827b4b53af9e4cef19b30"
+    }
+  ],
+  "bundle_files": [
+    {
+      "path": "README.md",
+      "bytes": 3222,
+      "sha256": "26997136dd7ebfffe9035ac70738ec13eda372d799ea6c0b644dea9f0820cb16"
+    },
+    {
+      "path": "RUN.md",
+      "bytes": 1310,
+      "sha256": "a1caa8c448f3a9cf5ac4009164bf97dcd1749533d4d430d758d80c1af97b18df"
+    },
+    {
+      "path": "bin/primus-adversarial-code-checker",
+      "bytes": 124937,
+      "sha256": "ae5ace1582eae247d9f64ea9bc97bb9374427982cc5ba1f6beb4a355d7e3f021"
+    },
+    {
+      "path": "bin/primus-general-code-review",
+      "bytes": 313092,
+      "sha256": "3a22bb840576b670cf5d161077dbb69b2b78fbe537ce9bea191232b01abe807e"
+    },
+    {
+      "path": "bin/primus-grumpy-fast-checker",
+      "bytes": 20522,
+      "sha256": "f06f54b4def826d7610fc2abbc42dd535a27200d04e65bf620132f5840e03fb6"
+    },
+    {
+      "path": "bin/primus-grumpy-reviewer",
+      "bytes": 3042,
+      "sha256": "fe00a4930d722838232a12d236d9d69868f381fdfd6ca7d471236c8aed1ee8bc"
+    },
+    {
+      "path": "bin/run-red-team-gate",
+      "bytes": 1426,
+      "sha256": "e3ef96c27ee978a1e603b9d1587e71d19c8a81a11ded00a4914089efb4ed1371"
+    },
+    {
+      "path": "config/reviewers.template.json",
+      "bytes": 5249,
+      "sha256": "5bb8f1b7470cd2c6fab2b62afd11b6acf59ed75cc691d41666bb2423434b9823"
+    },
+    {
+      "path": "lib/primus_inference_mode.py",
+      "bytes": 1808,
+      "sha256": "481dcab96585a9622bb2835cff32ed7cae510ad0c9745e1b1f6135dde6245c3d"
+    },
+    {
+      "path": "profiles/code-quality-reviewer-prompt.md",
+      "bytes": 1080,
+      "sha256": "2eeb3bf63fccfbee042812dc94e7032048603f0f8c3827b4b53af9e4cef19b30"
+    },
+    {
+      "path": "profiles/code-reviewer.md",
+      "bytes": 4032,
+      "sha256": "3b8a366b76825a27c5576111998b91fc372a659498997fe6d994a2d90a648651"
+    },
+    {
+      "path": "profiles/pr-test-analyzer.md",
+      "bytes": 5054,
+      "sha256": "fab33512554b37602495a276cc56ff54c92ac1dceed2ce1ce597a5bbcf7dc940"
+    },
+    {
+      "path": "profiles/silent-failure-hunter.md",
+      "bytes": 7937,
+      "sha256": "d00d9e9f69c3a309f8d786070e39cc10a88b2e9ae02c031bc7a89cb7eae7a0ca"
+    },
+    {
+      "path": "profiles/solid-snake.md",
+      "bytes": 1405,
+      "sha256": "604b301e3f644ff925a99c788d5639c89ec7a4f62803c9a2406b2600de7e5818"
+    },
+    {
+      "path": "profiles/team-reviewer.md",
+      "bytes": 3413,
+      "sha256": "cb0061e9e678ee4a9d26865e6d82b5c280ff98557a8e86f1535ed18aefa12c84"
+    },
+    {
+      "path": "prompts/adversarial_code_checker_compact_retry_prompt_v1.md",
+      "bytes": 3205,
+      "sha256": "f4a2dcbfd419f699eb8cc3d740bc3bf8f7a7e5c34ab50b4fa87f5d57ed749e26"
+    },
+    {
+      "path": "prompts/adversarial_code_checker_prompt_v2_draft.md",
+      "bytes": 9820,
+      "sha256": "fe41a0d41b36aa7d2579556ff29d4402bc76d4c9c39db2c5b86c969179c4995d"
+    },
+    {
+      "path": "prompts/grumpy_reviewer_compact_prompt_v1.md",
+      "bytes": 2994,
+      "sha256": "4aa0fd9f0f450a39ff8648b9f1d77122496aed5294b10f16bc4a1fe966cf6a26"
+    },
+    {
+      "path": "prompts/grumpy_reviewer_gemma4_prompt_v0_1.md",
+      "bytes": 6889,
+      "sha256": "0961b8649c5480806ece49a4b1691c788e636abd2c1ffa2f3d87a302a72d9ac7"
+    },
+    {
+      "path": "prompts/inline_code_documenter_prompt_v0_1.md",
+      "bytes": 1298,
+      "sha256": "4edf11dbddc47b8ea42e94ee5a069b0d57f125e90921cd9882b4bd11e4abf949"
+    },
+    {
+      "path": "schemas/adversarial_code_checker_compact_retry_schema_v1.json",
+      "bytes": 1748,
+      "sha256": "0c11b1295523dc13eb24e92dab39ae0e9ef11a766ceae5eb7286311fb339b61b"
+    },
+    {
+      "path": "schemas/adversarial_code_checker_result_schema_v1_draft.json",
+      "bytes": 12135,
+      "sha256": "0f34076598488046757a2e41c646fc75db77d5e44f7b90056e2dd767c8d992b7"
+    },
+    {
+      "path": "schemas/grumpy_compact_response_schema_v1.json",
+      "bytes": 4627,
+      "sha256": "d35efb5a8c4d9f4711bea95cc8bf9df9753e37318d71f4a9b0e9f8fda9d876ab"
+    },
+    {
+      "path": "schemas/inline_code_documenter_result_schema_v0_1.json",
+      "bytes": 1111,
+      "sha256": "f225203fc12c8b4a64d856b88e35def7fb1b2b0c3fb99ff6ca777d5320e46840"
+    },
+    {
+      "path": "verification/empty-boat-v18-result.json",
+      "bytes": 8794,
+      "sha256": "e6ee2f130a553b87e8078f7eee139b20987212b292afcc9375b22527ce19dcf0"
+    },
+    {
+      "path": "verification/empty-boat-v21-result.json",
+      "bytes": 8753,
+      "sha256": "c88b25bf5787993b544db220de7d4c9bd73e9f32fbec71030b7a85f56be44794"
+    },
+    {
+      "path": "verification/solid-snake-local-review-v1.json",
+      "bytes": 2135,
+      "sha256": "e9fdea976508d79530ff6e5b2a3ee9c08c9ee4a82cfd58565a34d44714fb1080"
+    }
+  ],
+  "verification": {
+    "gate_result": "verification/empty-boat-v21-result.json",
+    "solid_snake_review": "verification/solid-snake-local-review-v1.json",
+    "decision": "no_blocking_defect_found",
+    "sdlc_lanes": 6,
+    "blocking_findings": 0,
+    "unresolved_findings": 0,
+    "focused_production_tests": "93 passed",
+    "focused_fixture_tests": "9 passed",
+    "static_smoke": "pass",
+    "fail_closed_smoke": "pass"
+  },
+  "promotion": "shared-runtime-available; production promotion remains owner-authorized"
+}

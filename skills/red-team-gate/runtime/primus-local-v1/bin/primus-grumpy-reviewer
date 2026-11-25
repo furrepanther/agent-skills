@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Lean single-agent Grumpy Reviewer launcher.
+
+This intentionally avoids multi-lane subprocess fanout. It replaces itself with
+the canonical checker wrapper using the Grumpy Reviewer prompt, so runtime
+inference follows the selected mode. Local is the default and never falls
+back to cloud; explicit --cloud is passed through to the checker.
+"""
+
+from __future__ import annotations
+
+import argparse
+from primus_inference_mode import (
+    add_inference_mode,
+    child_mode_args,
+    parse_inference_args,
+    validate_local_model_alias,
+)
+import os
+from pathlib import Path
+
+
+RUNTIME_ROOT = Path(os.getenv("PRIMUS_RED_TEAM_GATE_ROOT", Path(__file__).resolve().parent.parent))
+CHECKER = RUNTIME_ROOT / "bin" / "primus-adversarial-code-checker"
+PROMPT = RUNTIME_ROOT / "prompts" / "grumpy_reviewer_compact_prompt_v1.md"
+RESPONSE_SCHEMA = RUNTIME_ROOT / "schemas" / "grumpy_compact_response_schema_v1.json"
+DEFAULT_GRUMPY_MODEL = os.getenv("PRIMUS_GRUMPY_MODEL", "local-inference-11888")
+DEFAULT_MAX_REVIEW_CHARS = 12000
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Run Grumpy Reviewer through the Primus inference router")
+    parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--raw-output", type=Path)
+    parser.add_argument("--prompt-file", type=Path, default=PROMPT)
+    parser.add_argument(
+        "--evidence-poll-s",
+        type=float,
+        default=2.0,
+        help="runtime evidence observation interval; this is not a job deadline",
+    )
+    parser.add_argument("--max-tokens", type=int, default=8192)
+    parser.add_argument("--max-review-chars", type=int, default=DEFAULT_MAX_REVIEW_CHARS)
+    parser.add_argument("--response-schema-file", type=Path, default=RESPONSE_SCHEMA)
+    parser.add_argument("--model", help="local router model alias; cloud uses PRIMUS_REVIEW_CLOUD_MODEL / cloud configuration", default=os.getenv("PRIMUS_GRUMPY_MODEL", os.getenv("PRIMUS_CHECKER_MODEL", DEFAULT_GRUMPY_MODEL)))
+    add_inference_mode(parser)
+    args = parse_inference_args(parser)
+
+    if args.inference_mode == "local":
+        try:
+            args.model = validate_local_model_alias(args.model)
+        except ValueError as exc:
+            parser.error(str(exc))
+
+    max_tokens = args.max_tokens
+    argv = [
+        str(CHECKER),
+        "--input",
+        str(args.input),
+        "--prompt-file",
+        str(args.prompt_file),
+        "--evidence-poll-s",
+        str(args.evidence_poll_s),
+        "--max-tokens",
+        str(max_tokens),
+        "--max-review-chars",
+        str(args.max_review_chars),
+        "--response-schema-file",
+        str(args.response_schema_file),
+        "--model",
+        args.model,
+    ]
+    argv.extend(child_mode_args(args))
+    if args.output:
+        argv.extend(["--output", str(args.output)])
+    if args.raw_output:
+        argv.extend(["--raw-output", str(args.raw_output)])
+    os.execv(str(CHECKER), argv)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,214 @@
+{
+  "artifact": "primus-general-code-review-result-v0.1",
+  "auto_selected_lanes": [
+    {
+      "lane_id": "superpowers_code_reviewer",
+      "reason": "multi-file code change (2 code paths); large review surface",
+      "score": 2,
+      "status": "enabled"
+    }
+  ],
+  "config": "/usr/production/next-tasks/qwen3_checker_agentic_reviewers_v0_1.json",
+  "grumpy_final": {
+    "blocking_findings": 0,
+    "decision": "no_blocking_defect_found",
+    "exit_code": 0,
+    "packet_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/grumpy_review_packet.json",
+    "parse_error": "",
+    "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/grumpy_final.raw.txt",
+    "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/grumpy_final.result.json",
+    "retry_note": "",
+    "status": "ok",
+    "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/grumpy_final.stderr.txt"
+  },
+  "inline_documentation_pass": {
+    "chunk_count": 1,
+    "exit_code": 0,
+    "parse_error": "",
+    "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/inline_documentation.raw.txt",
+    "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/inline_documentation.result.json",
+    "status": "ok",
+    "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/inline_documentation.stderr.txt",
+    "suggested_comment_count": 3,
+    "summary": "Added comments to clarify Unicode error handling, artifact equivalence invariants, and test vector intent."
+  },
+  "input": "/tmp/primus-review/source-delivery-gate-20261123-v21.json",
+  "merge_decision": {
+    "decision": "no_blocking_defect_found",
+    "reason": "Grumpy final decision=no_blocking_defect_found"
+  },
+  "review_budget": {
+    "default_safe_lane_review_chars": 12000,
+    "effective_grumpy_diff_chars": 12000,
+    "effective_grumpy_retry_review_chars": 12000,
+    "effective_grumpy_review_chars": 12000,
+    "effective_inline_doc_review_chars": 12000,
+    "effective_lane_review_chars": 12000,
+    "effective_retry_review_chars": 12000,
+    "lane_repair_attempts": 1,
+    "max_validated_lane_review_chars": 12000,
+    "requested_grumpy_diff_chars": 12000,
+    "requested_grumpy_retry_review_chars": 12000,
+    "requested_grumpy_review_chars": 12000,
+    "requested_inline_doc_review_chars": 12000,
+    "requested_lane_review_chars": 12000,
+    "requested_retry_review_chars": 12000
+  },
+  "sdlc_lane_coverage": {
+    "completed_lanes": [
+      "qwen3_primary_adversarial_checker",
+      "official_pr_code_reviewer",
+      "silent_failure_hunter",
+      "pr_test_analyzer",
+      "team_reviewer_testing",
+      "superpowers_code_reviewer"
+    ],
+    "expected_lanes": [
+      "qwen3_primary_adversarial_checker",
+      "official_pr_code_reviewer",
+      "silent_failure_hunter",
+      "pr_test_analyzer",
+      "team_reviewer_testing",
+      "superpowers_code_reviewer"
+    ],
+    "failed_lanes": [],
+    "parse_failed_lanes": [],
+    "retried_or_truncated_lanes": [],
+    "targeted_repair_blocked_lanes": [],
+    "targeted_repaired_lanes": []
+  },
+  "sdlc_lane_results": [
+    {
+      "blocking_findings": 0,
+      "coverage_blocking": false,
+      "decision": "no_blocking_defect_found",
+      "dimension": "general_adversarial",
+      "exit_code": 0,
+      "findings_summary": [],
+      "lane_id": "qwen3_primary_adversarial_checker",
+      "parse_error": "",
+      "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/qwen3_primary_adversarial_checker.chunk1.raw.txt",
+      "repair": {
+        "actions": [],
+        "attempts": 0,
+        "blocker": "",
+        "final_status": "not_needed"
+      },
+      "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/qwen3_primary_adversarial_checker.aggregate.json",
+      "retry_note": "",
+      "status": "ok",
+      "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/qwen3_primary_adversarial_checker.chunk1.stderr.txt",
+      "stderr_preview": "local router capacity wait: health=1 queue=1 active=0/4 user=0/4 queued=0/0"
+    },
+    {
+      "blocking_findings": 0,
+      "coverage_blocking": false,
+      "decision": "no_blocking_defect_found",
+      "dimension": "bug_quality_project_rules",
+      "exit_code": 0,
+      "findings_summary": [],
+      "lane_id": "official_pr_code_reviewer",
+      "parse_error": "",
+      "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/official_pr_code_reviewer.chunk1.raw.txt",
+      "repair": {
+        "actions": [],
+        "attempts": 0,
+        "blocker": "",
+        "final_status": "not_needed"
+      },
+      "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/official_pr_code_reviewer.aggregate.json",
+      "retry_note": "",
+      "status": "ok",
+      "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/official_pr_code_reviewer.chunk1.stderr.txt",
+      "stderr_preview": "local router capacity wait: health=1 queue=1 active=0/4 user=0/4 queued=0/0"
+    },
+    {
+      "blocking_findings": 0,
+      "coverage_blocking": false,
+      "decision": "no_blocking_defect_found",
+      "dimension": "silent_failures_error_handling_fallbacks",
+      "exit_code": 0,
+      "findings_summary": [],
+      "lane_id": "silent_failure_hunter",
+      "parse_error": "",
+      "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/silent_failure_hunter.chunk1.raw.txt",
+      "repair": {
+        "actions": [],
+        "attempts": 0,
+        "blocker": "",
+        "final_status": "not_needed"
+      },
+      "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/silent_failure_hunter.aggregate.json",
+      "retry_note": "",
+      "status": "ok",
+      "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/silent_failure_hunter.chunk1.stderr.txt",
+      "stderr_preview": "local router capacity wait: health=1 queue=1 active=0/4 user=0/4 queued=0/0"
+    },
+    {
+      "blocking_findings": 0,
+      "coverage_blocking": false,
+      "decision": "no_blocking_defect_found",
+      "dimension": "test_assertion_quality",
+      "exit_code": 0,
+      "findings_summary": [],
+      "lane_id": "pr_test_analyzer",
+      "parse_error": "",
+      "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/pr_test_analyzer.chunk1.raw.txt",
+      "repair": {
+        "actions": [],
+        "attempts": 0,
+        "blocker": "",
+        "final_status": "not_needed"
+      },
+      "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/pr_test_analyzer.aggregate.json",
+      "retry_note": "",
+      "status": "ok",
+      "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/pr_test_analyzer.chunk1.stderr.txt",
+      "stderr_preview": "local router capacity wait: health=1 queue=1 active=0/4 user=0/4 queued=0/0"
+    },
+    {
+      "blocking_findings": 0,
+      "coverage_blocking": false,
+      "decision": "no_blocking_defect_found",
+      "dimension": "testing_dimension_structured",
+      "exit_code": 0,
+      "findings_summary": [],
+      "lane_id": "team_reviewer_testing",
+      "parse_error": "",
+      "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/team_reviewer_testing.chunk1.raw.txt",
+      "repair": {
+        "actions": [],
+        "attempts": 0,
+        "blocker": "",
+        "final_status": "not_needed"
+      },
+      "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/team_reviewer_testing.aggregate.json",
+      "retry_note": "",
+      "status": "ok",
+      "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/team_reviewer_testing.chunk1.stderr.txt",
+      "stderr_preview": "local router capacity wait: health=1 queue=1 active=0/4 user=0/4 queued=0/0"
+    },
+    {
+      "blocking_findings": 0,
+      "coverage_blocking": false,
+      "decision": "no_blocking_defect_found",
+      "dimension": "superpowers_code_review",
+      "exit_code": 0,
+      "findings_summary": [],
+      "lane_id": "superpowers_code_reviewer",
+      "parse_error": "",
+      "raw_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/superpowers_code_reviewer.chunk1.raw.txt",
+      "repair": {
+        "actions": [],
+        "attempts": 0,
+        "blocker": "",
+        "final_status": "not_needed"
+      },
+      "result_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/superpowers_code_reviewer.aggregate.json",
+      "retry_note": "",
+      "status": "ok",
+      "stderr_path": "/tmp/primus-review/source-delivery-gate-20261123-v21-raw/superpowers_code_reviewer.chunk1.stderr.txt",
+      "stderr_preview": "local router capacity wait: health=1 queue=1 active=0/4 user=0/4 queued=0/0"
+    }
+  ]
+}

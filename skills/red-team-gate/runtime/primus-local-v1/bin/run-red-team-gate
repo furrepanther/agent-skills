@@ -1,0 +1,48 @@
+#!/bin/sh
+set -eu
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+TMP_ROOT=${PRIMUS_REVIEW_TMPDIR:-/tmp/primus-review}
+mkdir -p "$TMP_ROOT"
+chmod 700 "$TMP_ROOT"
+CONFIG="$TMP_ROOT/primus-red-team-gate-config-$$.json"
+
+cleanup() {
+    rm -f "$CONFIG"
+}
+trap cleanup EXIT
+
+export PRIMUS_RED_TEAM_GATE_ROOT="$ROOT"
+if [ -n "${PYTHONPATH:-}" ]; then
+    export PYTHONPATH="$ROOT/lib:$PYTHONPATH"
+else
+    export PYTHONPATH="$ROOT/lib"
+fi
+
+python3 - "$ROOT/config/reviewers.template.json" "$CONFIG" "$ROOT" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+template, output, root = sys.argv[1:]
+data = json.loads(Path(template).read_text(encoding="utf-8"))
+
+def expand(value):
+    if isinstance(value, str):
+        return value.replace("{{RUNTIME_ROOT}}", root)
+    if isinstance(value, list):
+        return [expand(item) for item in value]
+    if isinstance(value, dict):
+        return {key: expand(item) for key, item in value.items()}
+    return value
+
+Path(output).write_text(json.dumps(expand(data), indent=2) + "\n", encoding="utf-8")
+PY
+
+python3 "$ROOT/bin/primus-general-code-review" \
+    --config "$CONFIG" \
+    --checker "$ROOT/bin/primus-adversarial-code-checker" \
+    --grumpy-launcher "$ROOT/bin/primus-grumpy-reviewer" \
+    --inline-doc-prompt "$ROOT/prompts/inline_code_documenter_prompt_v0_1.md" \
+    --inline-doc-schema "$ROOT/schemas/inline_code_documenter_result_schema_v0_1.json" \
+    "$@"

@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://primus.local/schemas/grumpy-compact-response-v1.json",
+  "title": "Primus Grumpy compact model response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "findings",
+    "merge_decision",
+    "acceptance_coverage",
+    "adversarial_checks_performed"
+  ],
+  "properties": {
+    "findings": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity",
+          "location",
+          "blocking",
+          "observed_evidence",
+          "failure_scenario",
+          "required_fix"
+        ],
+        "properties": {
+          "severity": {"type": "string", "enum": ["Critical", "High", "Medium", "Low"]},
+          "location": {"type": "string", "maxLength": 160},
+          "blocking": {"type": "boolean"},
+          "observed_evidence": {"type": "string", "maxLength": 180},
+          "failure_scenario": {"type": "string", "maxLength": 180},
+          "required_fix": {"type": "string", "maxLength": 180},
+          "why_not_noise": {"type": "string", "maxLength": 130}
+        }
+      }
+    },
+    "merge_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "reason", "confidence"],
+      "properties": {
+        "decision": {
+          "type": "string",
+          "enum": ["block", "insufficient_evidence", "no_blocking_defect_found"]
+        },
+        "reason": {"type": "string", "maxLength": 180},
+        "confidence": {"type": "string", "enum": ["high", "medium", "low"]}
+      }
+    },
+    "acceptance_coverage": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requirement_id",
+          "covered_by_tests",
+          "coverage",
+          "implementation_evidence",
+          "test_evidence",
+          "gap",
+          "no_block_justification"
+        ],
+        "properties": {
+          "requirement_id": {"type": "string", "pattern": "^AC-[0-9]+$", "maxLength": 16},
+          "covered_by_tests": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {"type": "string", "pattern": "^T[0-9]+$", "maxLength": 16}
+          },
+          "coverage": {"type": "string", "enum": ["covered", "weakly_covered", "not_covered", "unclear"]},
+          "implementation_evidence": {"type": "string", "maxLength": 130},
+          "test_evidence": {"type": "string", "maxLength": 130},
+          "gap": {"type": "string", "maxLength": 130},
+          "no_block_justification": {"type": "string", "maxLength": 130}
+        }
+      }
+    },
+    "adversarial_checks_performed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["why_no_block_is_justified"],
+      "properties": {
+        "requirements_coverage": {"type": "string", "maxLength": 130},
+        "test_assertion_strength": {"type": "string", "maxLength": 130},
+        "failure_paths": {"type": "string", "maxLength": 130},
+        "async_concurrency": {"type": "string", "maxLength": 130},
+        "config_default_path_changes": {"type": "string", "maxLength": 130},
+        "security_auth_policy_bypass": {"type": "string", "maxLength": 130},
+        "persistence_idempotence": {"type": "string", "maxLength": 130},
+        "external_service_router_behavior": {"type": "string", "maxLength": 130},
+        "prompt_injection_resistance": {"type": "string", "maxLength": 130},
+        "truncation_missing_context_risk": {"type": "string", "maxLength": 130},
+        "why_no_block_is_justified": {"type": "string", "maxLength": 130}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "merge_decision": {
+            "properties": {
+              "decision": {"const": "no_blocking_defect_found"}
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "adversarial_checks_performed": {
+            "required": [
+              "requirements_coverage",
+              "test_assertion_strength",
+              "failure_paths",
+              "async_concurrency",
+              "config_default_path_changes",
+              "security_auth_policy_bypass",
+              "persistence_idempotence",
+              "external_service_router_behavior",
+              "prompt_injection_resistance",
+              "truncation_missing_context_risk",
+              "why_no_block_is_justified"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
