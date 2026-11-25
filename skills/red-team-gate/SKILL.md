@@ -95,6 +95,14 @@ constraint, or a limit on an unrelated promotion gate.
   diagnostic settings, never total job-duration limits; retain only a capped tail
   of compact snapshots and never read whole logs. Report `transport_ambiguous`
   rather than silently retrying or claiming a model failure.
+- If the router exposes lease diagnostics, a healthy full-capacity state with
+  queued work at zero, one or more `client_disconnected=true` leases that are
+  still unreleased, and unchanged counters/worker-slot progress across the
+  required consecutive observations is a `capacity_disconnected_lease_stall`.
+  Fail the waiting review lane with that evidence; never terminate the router,
+  model backend, or another worker to recover capacity. A connected slow
+  generation, or a router that does not expose this evidence, remains subject
+  to the normal live-progress rules above.
 
 ## Full gate components
 
