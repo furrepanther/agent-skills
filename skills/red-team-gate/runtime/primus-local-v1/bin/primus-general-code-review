@@ -126,6 +126,10 @@ def resolve_memory_api_url() -> str:
 
 MEMORY_API_URL = resolve_memory_api_url()
 MEMORY_API_TIMEOUT_S = 10.0
+# Deletion is a durable mutation on the local Memory Fabric API.  This is a
+# transport response wait, not a process/job kill deadline; a lost response is
+# reconciled by exact identity before the caller may decide whether to resume.
+MEMORY_DELETE_API_TIMEOUT_S = 60.0
 TEMP_EVIDENCE_RETENTION_DAYS = 7
 # Allows independently-started writers to converge on the first valid expiry
 # without accepting a materially extended retention period.
@@ -2269,7 +2273,12 @@ def entry_primary_text_key(entry: dict[str, Any]) -> str | None:
     return None
 
 
-def _memory_api_json(path: str, payload: dict[str, Any]) -> dict[str, Any]:
+def _memory_api_json(
+    path: str,
+    payload: dict[str, Any],
+    *,
+    timeout_s: float = MEMORY_API_TIMEOUT_S,
+) -> dict[str, Any]:
     request = urllib.request.Request(
         MEMORY_API_URL + path,
         data=json.dumps(payload, ensure_ascii=True).encode("utf-8"),
@@ -2277,7 +2286,7 @@ def _memory_api_json(path: str, payload: dict[str, Any]) -> dict[str, Any]:
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=MEMORY_API_TIMEOUT_S) as response:
+        with urllib.request.urlopen(request, timeout=timeout_s) as response:
             decoded = json.loads(response.read().decode("utf-8"))
     except (OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"Memory Fabric {path} failed: {type(exc).__name__}: {exc}") from exc
@@ -2822,16 +2831,38 @@ def _memory_delete_exact(*, memory_id: str, entry_id: str) -> dict[str, Any]:
     normalized_entry_id = str(entry_id or normalized_memory_id).strip()
     if not normalized_memory_id or not normalized_entry_id:
         raise ValueError("Memory Fabric exact deletion requires memory_id and entry_id")
-    response = _memory_api_json(
-        "/memory/delete",
-        {
-            "memory_id": normalized_memory_id,
-            "entry_id": normalized_entry_id,
-            "user_id": "global",
-            "reason": "temporary review evidence no longer needed",
-            "origin_tool": "primus-general-code-review",
-        },
-    )
+    try:
+        response = _memory_api_json(
+            "/memory/delete",
+            {
+                "memory_id": normalized_memory_id,
+                "entry_id": normalized_entry_id,
+                "user_id": "global",
+                "reason": "temporary review evidence no longer needed",
+                "origin_tool": "primus-general-code-review",
+            },
+            timeout_s=MEMORY_DELETE_API_TIMEOUT_S,
+        )
+    except RuntimeError as delete_error:
+        # A timed-out HTTP response is not proof that the mutation failed. An
+        # exact read distinguishes a completed delete from a still-present
+        # record; never replay a mutation merely because its receipt vanished.
+        try:
+            _memory_exact_result(normalized_memory_id, lookup_query=normalized_entry_id)
+        except RuntimeError as reconcile_error:
+            if "did not find" in str(reconcile_error).lower():
+                return {
+                    "deleted": True,
+                    "found": True,
+                    "receipt_ambiguous": True,
+                    "reconciled_absence": True,
+                }
+            raise RuntimeError(
+                "Memory Fabric exact deletion outcome is ambiguous and exact reconciliation failed"
+            ) from reconcile_error
+        raise RuntimeError(
+            "Memory Fabric exact deletion response was lost while the exact record remains; refusing a blind retry"
+        ) from delete_error
     result = response.get("result") if isinstance(response.get("result"), dict) else response
     if result.get("deleted") is not True or result.get("found") is not True:
         raise RuntimeError(

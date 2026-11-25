@@ -51,7 +51,8 @@ def main() -> int:
     }
 
     delete_capture = {}
-    module._memory_api_json = lambda path, payload: (
+    saved_memory_api_json = module._memory_api_json
+    module._memory_api_json = lambda path, payload, **kwargs: (
         delete_capture.update({"path": path, "payload": payload})
         or {"deleted": True, "found": True}
     )
@@ -66,6 +67,35 @@ def main() -> int:
             "origin_tool": "primus-general-code-review",
         },
     }
+
+    saved_exact_result_for_delete = module._memory_exact_result
+    try:
+        module._memory_api_json = lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError("Memory Fabric /memory/delete failed: TimeoutError")
+        )
+        module._memory_exact_result = lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError("Memory Fabric exact verification did not find mem-amb")
+        )
+        reconciled_delete = module._memory_delete_exact(
+            memory_id="mem-amb", entry_id="entry-amb"
+        )
+        assert reconciled_delete["receipt_ambiguous"] is True
+
+        module._memory_exact_result = lambda *args, **kwargs: {
+            "memory_id": "mem-present",
+            "entry_id": "entry-present",
+        }
+        try:
+            module._memory_delete_exact(
+                memory_id="mem-present", entry_id="entry-present"
+            )
+        except RuntimeError as exc:
+            assert "refusing a blind retry" in str(exc)
+        else:
+            raise AssertionError("ambiguous deletion with a present record was retried")
+    finally:
+        module._memory_api_json = saved_memory_api_json
+        module._memory_exact_result = saved_exact_result_for_delete
 
     # Compact lane transport may retain the exact proof fields while omitting
     # the redundant record_kind/canonical fields. The exact record metadata is
