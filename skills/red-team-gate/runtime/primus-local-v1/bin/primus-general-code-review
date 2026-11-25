@@ -4023,12 +4023,13 @@ def _verified_temporary_evidence_pointer_record(
 ) -> tuple[dict[str, Any], dict[str, Any], str]:
     """Validate a root pointer and return its exact record and metadata."""
     memory_id = str(pointer.get("memory_id") or "").strip()
+    declared_record_kind = str(pointer.get("record_kind") or "").strip()
     if (
         not memory_id
         or pointer.get("verified") is not True
         or pointer.get("canonical") is True
-        or pointer.get("record_kind") != "temporary_review_evidence"
         or pointer.get("retention_verified") is not True
+        or declared_record_kind not in {"", "temporary_review_evidence"}
     ):
         raise RuntimeError("temporary evidence pointer is missing required verification fields")
     source_packet_sha256 = str(
@@ -4207,7 +4208,11 @@ def purge_temporary_evidence_pointers(
         if not isinstance(pointer, dict) or pointer.get("canonical") is True:
             raise ValueError("bounded Memory Fabric cleanup requires non-canonical pointer objects")
         memory_id = str(pointer.get("memory_id") or "").strip()
-        if not memory_id or pointer.get("record_kind") != "temporary_review_evidence":
+        declared_record_kind = str(pointer.get("record_kind") or "").strip()
+        if (
+            not memory_id
+            or declared_record_kind not in {"", "temporary_review_evidence"}
+        ):
             raise ValueError("bounded Memory Fabric cleanup requires an exact temporary evidence memory_id")
         verify_temporary_evidence_pointer(pointer)
         child_refs = (

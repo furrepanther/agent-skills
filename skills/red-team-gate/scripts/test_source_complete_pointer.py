@@ -67,6 +67,36 @@ def main() -> int:
         },
     }
 
+    # Compact lane transport may retain the exact proof fields while omitting
+    # the redundant record_kind/canonical fields. The exact record metadata is
+    # the authoritative proof and must still validate without widening scope.
+    saved_exact_result = module._memory_exact_result
+    try:
+        module._memory_exact_result = lambda memory_id, lookup_query="": {
+            "memory_id": memory_id,
+            "entry_id": memory_id,
+            "metadata": {
+                "temporary": True,
+                "canonical": False,
+                "retention_verified": True,
+                "content_sha256": "c" * 64,
+                "packet_sha256": "p" * 64,
+                "purge_after_utc": "2099-01-01T00:00:00Z",
+            },
+        }
+        module.verify_temporary_evidence_pointer(
+            {
+                "memory_id": "mem-compact",
+                "verified": True,
+                "retention_verified": True,
+                "content_sha256": "c" * 64,
+                "packet_sha256": "p" * 64,
+                "purge_after_utc": "2099-01-01T00:00:00Z",
+            }
+        )
+    finally:
+        module._memory_exact_result = saved_exact_result
+
     saved = {
         name: os.environ.get(name)
         for name in ("PRIMUS_MEMORY_API_URL", "ANTIGRAVITY_MEMORY_API_URL", "MEMORY_API_URL")
