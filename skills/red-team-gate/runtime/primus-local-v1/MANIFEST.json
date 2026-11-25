@@ -1,7 +1,7 @@
 {
   "schema": "primus-local-red-team-gate-runtime-manifest-v1",
   "runtime_id": "primus-local-red-team-gate-v1",
-  "assembled_at_utc": "2026-11-25T13:49:36.901748181Z",
+  "assembled_at_utc": "2026-11-25T14:15:55.904648461Z",
   "inference_contract": {
     "default": "local",
     "router": "http://127.0.0.1:11888/v1",
@@ -132,8 +132,8 @@
     },
     {
       "path": "bin/primus-general-code-review",
-      "bytes": 315892,
-      "sha256": "cd47a89e7a9befc027b05d0edd688a2339a27477426ad3b71e38c2af3855e0ad"
+      "bytes": 316432,
+      "sha256": "282f15d5b2014e112888f0c4af012bbe3b3a12abb768818a3de9ea7c5328983f"
     },
     {
       "path": "bin/primus-grumpy-fast-checker",

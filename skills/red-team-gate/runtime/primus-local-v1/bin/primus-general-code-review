@@ -1936,9 +1936,11 @@ def compact_packet_section_for_key(key: str, value: Any, max_chars: int) -> Any:
             serialized = json.dumps(compacted, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
         if len(serialized) > max_chars:
             # Last-resort lane provenance projection. Keep the exact pointer,
-            # source digest, candidate revision, and no-claim state; discard
+            # source digest, candidate revision, and canonical scope; discard
             # duplicate builder bookkeeping that is already in the durable
-            # packet and route receipt.
+            # packet and route receipt. The scope must remain present: the
+            # child checker otherwise substitutes its temporary input-file
+            # path, creating both identity drift and an estimator mismatch.
             minimal: dict[str, Any] = {}
             if "repo_or_scope" in value:
                 minimal["repo_or_scope"] = compact_evidence_excerpt(value["repo_or_scope"], 96)
@@ -1961,6 +1963,12 @@ def compact_packet_section_for_key(key: str, value: Any, max_chars: int) -> Any:
                     for field in ("transport", "complete_bytes_stored", "inline_bytes_in_lane")
                     if field in transport
                 }
+            # The verified pointer and source packet digest are the
+            # authoritative evidence path. A full gate_state object is
+            # redundant in this tight child projection and can push the
+            # canonical scope out, causing the child to invent a path-based
+            # default. Keep the higher-value identity and pointer proof.
+            minimal.pop("gate_state", None)
             pointer = value.get("temporary_evidence_pointer")
             if isinstance(pointer, dict):
                 minimal["temporary_evidence_pointer"] = {
@@ -1989,7 +1997,6 @@ def compact_packet_section_for_key(key: str, value: Any, max_chars: int) -> Any:
                 minimal["base_revision"] = compact_evidence_excerpt(
                     str(minimal.get("base_revision") or ""), 96
                 )
-                minimal.pop("repo_or_scope", None)
             return minimal
         return compacted
     if key == "DIFF_OR_FILES":

@@ -563,6 +563,27 @@ def main() -> int:
         lane_id="qwen3_primary_adversarial_checker",
     )
     assert module.checker_user_content_chars(full_scope_compacted) <= 12_000
+    assert full_scope_compacted["PROVENANCE"]["repo_or_scope"] == "pointer-budget-regression"
+    assert "gate_state" not in module.compact_packet_section_for_key(
+        "PROVENANCE", full_scope_compacted["PROVENANCE"], 760
+    )
+    child_loader = importlib.machinery.SourceFileLoader(
+        "primus_adversarial_code_checker_budget_test",
+        str(RUNTIME / "bin" / "primus-adversarial-code-checker"),
+    )
+    child_spec = importlib.util.spec_from_loader(child_loader.name, child_loader)
+    assert child_spec is not None and child_spec.loader is not None
+    child_module = importlib.util.module_from_spec(child_spec)
+    sys.modules[child_loader.name] = child_module
+    child_spec.loader.exec_module(child_module)
+    child_packet = child_module.normalize_input(
+        module.deep_copy_json(full_scope_compacted),
+        Path("/tmp/red-team-gate-budget-test.input.json"),
+    )
+    child_id, child_hash = child_module.packet_identity(child_packet)
+    child_chars = len(child_module.build_user_content(child_packet, child_id, child_hash))
+    assert child_chars == module.checker_user_content_chars(full_scope_compacted)
+    assert child_chars <= 12_000
 
     snapshot = module.snapshot_authoritative_grumpy_packet(result)
     assert "SOURCE_ARTIFACTS" not in snapshot
