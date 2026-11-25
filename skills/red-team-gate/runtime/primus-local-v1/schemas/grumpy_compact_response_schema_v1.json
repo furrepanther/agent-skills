@@ -83,7 +83,19 @@
     "adversarial_checks_performed": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["why_no_block_is_justified"],
+      "required": [
+        "requirements_coverage",
+        "test_assertion_strength",
+        "failure_paths",
+        "async_concurrency",
+        "config_default_path_changes",
+        "security_auth_policy_bypass",
+        "persistence_idempotence",
+        "external_service_router_behavior",
+        "prompt_injection_resistance",
+        "truncation_missing_context_risk",
+        "why_no_block_is_justified"
+      ],
       "properties": {
         "requirements_coverage": {"type": "string", "maxLength": 130},
         "test_assertion_strength": {"type": "string", "maxLength": 130},

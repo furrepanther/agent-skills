@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 from importlib.machinery import SourceFileLoader
 import hashlib
+import json
 from pathlib import Path
 import sys
 
@@ -24,6 +25,28 @@ spec.loader.exec_module(module)
 
 
 def main() -> int:
+    grumpy_schema = json.loads(
+        (RUNTIME / "schemas" / "grumpy_compact_response_schema_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    required_checks = {
+        "requirements_coverage",
+        "test_assertion_strength",
+        "failure_paths",
+        "async_concurrency",
+        "config_default_path_changes",
+        "security_auth_policy_bypass",
+        "persistence_idempotence",
+        "external_service_router_behavior",
+        "prompt_injection_resistance",
+        "truncation_missing_context_risk",
+        "why_no_block_is_justified",
+    }
+    assert set(
+        grumpy_schema["properties"]["adversarial_checks_performed"]["required"]
+    ) == required_checks
+
     packet = {
         "ACCEPTANCE_CRITERIA": [
             {"criterion_id": "AC-001", "text": "source bytes are verified"},
